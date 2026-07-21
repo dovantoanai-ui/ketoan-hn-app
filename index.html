@@ -217,6 +217,7 @@ tr.dirty td{background:#fff8e1}
       <h3>📝 Ghi chú cửa hàng</h3>
       <div class="muted" style="margin-bottom:10px">Ghi chú nhanh vào từng cửa hàng để xử lý sau. Lưu trên Sheet — mọi máy thấy chung.</div>
       <div class="row" style="gap:6px;margin-bottom:10px">
+        <button class="btn sm" style="background:var(--kelly)" onclick="openNoteModal('','')">+ Ghi chú mới</button>
         <button class="btn sm" id="nfChua" onclick="setNoteFilter('chua')">Chưa xử lý</button>
         <button class="btn ghost sm" id="nfDa" onclick="setNoteFilter('da')">Đã xử lý</button>
         <button class="btn ghost sm" id="nfAll" onclick="setNoteFilter('all')">Tất cả</button>
@@ -256,9 +257,10 @@ tr.dirty td{background:#fff8e1}
 <!-- Modal ghi chu cua hang -->
 <div class="modal" id="noteModal">
   <div class="box">
-    <h3>Ghi chú cửa hàng</h3>
-    <div class="muted" id="noteStoreName" style="margin-bottom:8px"></div>
-    <textarea id="noteText" style="width:100%;box-sizing:border-box;height:90px;padding:8px" placeholder="Nội dung cần xử lý sau... (vd: thiếu 4 nem thính, gọi lại xác nhận)"></textarea>
+    <h3>Ghi chú</h3>
+    <label class="fld">Cửa hàng / Tiêu đề (có thể để trống)</label>
+    <input id="noteStore" style="width:100%;box-sizing:border-box" placeholder="Tên cửa hàng hoặc tiêu đề ghi chú">
+    <textarea id="noteText" style="width:100%;box-sizing:border-box;height:90px;padding:8px;margin-top:10px" placeholder="Nội dung cần xử lý sau... (vd: thiếu 4 nem thính, gọi lại xác nhận)"></textarea>
     <div class="row" style="margin-top:12px;justify-content:flex-end">
       <button class="btn ghost sm" onclick="closeNote()">Đóng</button>
       <button class="btn sm" onclick="luuNoteSubmit()">💾 Lưu &amp; mở bảng note</button>
@@ -1564,11 +1566,13 @@ function noteBtnHtml(store, maKH){
 function openNoteModal(store, maKH){
   noteState.store = store || '';
   noteState.maKH = maKH || '';
-  document.getElementById('noteStoreName').textContent = store || '(chưa rõ cửa hàng)';
+  document.getElementById('noteStore').value = store || '';
   document.getElementById('noteText').value = '';
   document.getElementById('noteMsg').textContent = '';
   document.getElementById('noteModal').classList.add('on');
-  setTimeout(function(){ document.getElementById('noteText').focus(); }, 50);
+  // Ghi chu tu do (khong co cua hang) -> con tro vao o cua hang; note gan cua hang -> vao o noi dung
+  var focusEl = store ? 'noteText' : 'noteStore';
+  setTimeout(function(){ document.getElementById(focusEl).focus(); }, 50);
 }
 function closeNote(){ document.getElementById('noteModal').classList.remove('on'); }
 
@@ -1589,8 +1593,9 @@ function luuNoteSubmit(){
   var txt = document.getElementById('noteText').value.trim();
   if(!txt){ document.getElementById('noteMsg').textContent = 'Chưa nhập nội dung.'; return; }
   if(!getUrl()){ toast('Chưa nối Sheet (bấm ⚙ Cấu hình)', 'bad'); return; }
+  var store = document.getElementById('noteStore').value.trim();
   var rec = { note_id: noteIdGen(), ngay: noteDateStr(), nguoiTao: getDev(),
-              cuaHang: noteState.store, maKH: noteState.maKH, noiDung: txt,
+              cuaHang: store, maKH: noteState.maKH, noiDung: txt,
               trangThai:'Chua xu ly', ngayXuLy:'' };
   postToUrl(getUrl(), { action:'luuNote', note_id:rec.note_id, ngay:rec.ngay, nguoiTao:rec.nguoiTao,
               cuaHang:rec.cuaHang, maKH:rec.maKH, noiDung:rec.noiDung });
@@ -1637,7 +1642,7 @@ function renderNotes(){
     var act = isChuaXuLy(n)
       ? '<button type="button" class="btn-donenote btn sm" data-id="' + escAttr(n.note_id) + '" style="background:var(--kelly);white-space:nowrap">✔ Đã xử lý</button>'
       : '<span class="pill ok">Đã xử lý</span>';
-    html += '<tr><td style="white-space:nowrap">' + esc(n.ngay) + '</td><td>' + esc(n.cuaHang) + '</td><td>' + esc(n.noiDung)
+    html += '<tr><td style="white-space:nowrap">' + esc(n.ngay) + '</td><td>' + (esc(n.cuaHang) || '<span class="muted">—</span>') + '</td><td>' + esc(n.noiDung)
       + '</td><td class="muted">' + esc(n.nguoiTao) + '</td><td>' + act + '</td></tr>';
   });
   html += '</tbody></table></div>';
