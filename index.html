@@ -155,7 +155,9 @@ tr.dirty td{background:#fff8e1}
       <div class="row">
         <button class="btn ghost" id="btnHd1" onclick="ghiLenhHD('xuat_chieu')">1️⃣ Kéo hóa đơn cần xuất hôm nay</button>
         <button class="btn" id="btnHd2" onclick="ghiLenhHD('xuat_that')">2️⃣ Đẩy lên meInvoice</button>
+        <button class="btn" style="background:var(--kelly);margin-left:auto" onclick="taiExcelChieu()">📥 Tải Excel danh sách</button>
       </div>
+      <div class="muted" style="margin-top:6px">Nút <b>📥 Tải Excel danh sách</b>: tải bảng CHIỀU đang hiện ra file <code>.xlsx</code> về máy (máy nào cũng tải được, không cần máy văn phòng). Nếu vừa sửa dòng nào thì bấm "Lưu chỉnh sửa" trước cho chắc.</div>
       <div class="muted" id="hdMsg" style="margin-top:10px"></div>
     </div>
     <div id="hdTableWrap"></div>
@@ -978,6 +980,32 @@ function xoaCuaHang(stt){
     toast('Lỗi khi xóa — kiểm tra kết nối, thử lại', 'bad');
   });
 }
+// Tai danh sach tab CHIEU (danh sach xuat hoa don) ra file Excel ve may — moi may deu tai duoc, khong can may van phong.
+function taiExcelChieu(){
+  var d = state.chieuData;
+  if(!d || !d.rows || !d.rows.length){ toast('Chưa có danh sách CHIỀU — bấm 1️⃣ trước', 'bad'); return; }
+  setMsgHd('⏳ Đang chuẩn bị thư viện Excel...');
+  ensureXLSX(function(){
+    var header = ['STT','Cửa hàng','Sản phẩm','ĐVT','SL','Đơn giá','Thành tiền','Tên đơn vị','MST','Địa chỉ','Email','Người mua'];
+    var aoa = [header];
+    d.rows.forEach(function(r){
+      var tr = document.querySelector('tr[data-row="' + r.rowSheet + '"]'); // lay gia tri dang hien (ke ca vua sua) neu co
+      function g(field, fb){ if(tr){ var inp = tr.querySelector('input[data-f="' + field + '"]'); if(inp) return inp.value; } return (fb==null?'':fb); }
+      var sl = g('sl', r.sl), dg = g('dg', r.dg);
+      aoa.push([ r.stt, r.cuaHang, g('sp', r.sp), g('dvt', r.dvt),
+                 Number(sl)||0, Number(dg)||0, (Number(sl)||0)*(Number(dg)||0),
+                 g('donVi', r.donVi), g('mst', r.mst), g('diaChi', r.diaChi),
+                 g('email', r.email), g('nguoiMua', r.nguoiMua) ]);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'XuatHoaDon');
+    XLSX.writeFile(wb, 'DanhSach-XuatHoaDon-' + (d.ngay || todayStr()) + '.xlsx');
+    setMsgHd('✓ Đã tải file Excel danh sách xuất hóa đơn về máy.');
+    toast('Đã tải Excel danh sách', 'ok');
+  });
+}
+function setMsgHd(s){ var el = document.getElementById('hdMsg'); if(el) el.textContent = s; }
+
 // Khi chuyen sang tab 3: tu lay du lieu CHIEU hien co (neu da cau hinh URL/token) de xem ngay, khong doi bam nut.
 function refreshChieuView(){
   var url = getHdUrl(), token = getHdToken();
