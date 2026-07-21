@@ -96,6 +96,7 @@ tr.dirty td{background:#fff8e1}
   <button onclick="go(2,this); refreshChieuView();">3 · Xuất hóa đơn</button>
   <button onclick="go(3,this); _openTab4();">4 · Soát &amp; Đẩy</button>
   <button onclick="go(4,this); refreshMasterView();">5 · Quản lý cửa hàng</button>
+  <button onclick="go(5,this); loadNotes();">6 · Ghi chú</button>
 </div>
 
 <main>
@@ -209,6 +210,21 @@ tr.dirty td{background:#fff8e1}
     </div>
     <div id="mcTableWrap"></div>
   </section>
+
+  <!-- ===== TAB 6: GHI CHÚ CỬA HÀNG ===== -->
+  <section class="pane" id="pane5">
+    <div class="card">
+      <h3>📝 Ghi chú cửa hàng</h3>
+      <div class="muted" style="margin-bottom:10px">Ghi chú nhanh vào từng cửa hàng để xử lý sau. Lưu trên Sheet — mọi máy thấy chung.</div>
+      <div class="row" style="gap:6px;margin-bottom:10px">
+        <button class="btn sm" id="nfChua" onclick="setNoteFilter('chua')">Chưa xử lý</button>
+        <button class="btn ghost sm" id="nfDa" onclick="setNoteFilter('da')">Đã xử lý</button>
+        <button class="btn ghost sm" id="nfAll" onclick="setNoteFilter('all')">Tất cả</button>
+        <button class="btn ghost sm" style="margin-left:auto" onclick="loadNotes()">↻ Tải lại</button>
+      </div>
+      <div id="noteWrap"></div>
+    </div>
+  </section>
 </main>
 
 <!-- Cấu hình -->
@@ -234,6 +250,20 @@ tr.dirty td{background:#fff8e1}
       </div>
     </div>
     <div class="muted" id="cfgMsg" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- Modal ghi chu cua hang -->
+<div class="modal" id="noteModal">
+  <div class="box">
+    <h3>Ghi chú cửa hàng</h3>
+    <div class="muted" id="noteStoreName" style="margin-bottom:8px"></div>
+    <textarea id="noteText" style="width:100%;box-sizing:border-box;height:90px;padding:8px" placeholder="Nội dung cần xử lý sau... (vd: thiếu 4 nem thính, gọi lại xác nhận)"></textarea>
+    <div class="row" style="margin-top:12px;justify-content:flex-end">
+      <button class="btn ghost sm" onclick="closeNote()">Đóng</button>
+      <button class="btn sm" onclick="luuNoteSubmit()">💾 Lưu &amp; mở bảng note</button>
+    </div>
+    <div class="muted" id="noteMsg" style="margin-top:8px"></div>
   </div>
 </div>
 
@@ -625,7 +655,7 @@ document.addEventListener('click', function(ev){
 });
 function rowHD(r, dm, doiChieu, statusCell){
   var xv = r.xuatVat ? '<span class="pill info">' + esc(r.xuatVat) + '</span>' : '<span class="muted">—</span>';
-  return '<tr><td>' + esc(r.cuaHang) + '</td><td>' + xv + '</td><td class="num">' + fmt(r.tien)
+  return '<tr><td>' + esc(r.cuaHang) + ' ' + noteBtnHtml(r.cuaHang, r.maKH || '') + '</td><td>' + xv + '</td><td class="num">' + fmt(r.tien)
     + '</td><td>' + (r.congNo ? 'Công nợ' : 'Thu ngay') + '</td><td>' + doiChieu + '</td>' + statusCell + '</tr>';
 }
 function kpi(n, t, cls){ return '<div class="b"><div class="n '+(cls||'')+'">' + n + '</div><div class="t">' + t + '</div></div>'; }
@@ -1347,7 +1377,8 @@ function renderMasterTableFull(){
   html += '</tr></thead><tbody>';
   state.masterData.forEach(function(rec, idx){
     html += '<tr data-idx="' + idx + '" data-norm="' + escAttr(normVN(rec.sieuThi)) + '">'
-      + '<td><button type="button" class="btn" style="padding:4px 8px;font-size:12px;background:#c0392b;white-space:nowrap" onclick="xoaMasterRow(' + idx + ')">🗑️</button></td>';
+      + '<td style="white-space:nowrap"><button type="button" class="btn" style="padding:4px 8px;font-size:12px;background:#c0392b" onclick="xoaMasterRow(' + idx + ')">🗑️</button> '
+      + noteBtnHtml(rec.sieuThi, rec.maKH || '') + '</td>';
     COT_MC.forEach(function(c){
       if(TRUONG_BOOL_MC[c]){
         var checked = rec[c] === true || String(rec[c]).toLowerCase() === 'true';
@@ -1521,6 +1552,106 @@ function doiPin(){
   showPinGate();
 }
 
+// ===================== GHI CHU CUA HANG =====================
+var noteState = { store:'', maKH:'', filter:'chua', list:[] };
+
+// Nut Note gan vao tung dong cua hang (dung data-attr + delegate, khong nhet chuoi vao onclick)
+function noteBtnHtml(store, maKH){
+  return '<button type="button" class="btn-note" title="Ghi chú cửa hàng này" '
+    + 'data-store="' + escAttr(store || '') + '" data-makh="' + escAttr(maKH || '') + '" '
+    + 'style="border:1px solid var(--kelly);background:#eaf6ef;color:#1f6b43;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer">📝</button>';
+}
+function openNoteModal(store, maKH){
+  noteState.store = store || '';
+  noteState.maKH = maKH || '';
+  document.getElementById('noteStoreName').textContent = store || '(chưa rõ cửa hàng)';
+  document.getElementById('noteText').value = '';
+  document.getElementById('noteMsg').textContent = '';
+  document.getElementById('noteModal').classList.add('on');
+  setTimeout(function(){ document.getElementById('noteText').focus(); }, 50);
+}
+function closeNote(){ document.getElementById('noteModal').classList.remove('on'); }
+
+// ID + ngay theo gio may (KHONG toISOString)
+function noteIdGen(){
+  var d = new Date();
+  function p(n){ return String(n).padStart(2,'0'); }
+  return 'N' + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + String(Math.floor(Math.random()*1000)).padStart(3,'0');
+}
+function noteDateStr(){
+  var d = new Date();
+  function p(n){ return String(n).padStart(2,'0'); }
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function isChuaXuLy(n){ return normVN(n.trangThai || '').indexOf('da xu ly') < 0; }
+
+function luuNoteSubmit(){
+  var txt = document.getElementById('noteText').value.trim();
+  if(!txt){ document.getElementById('noteMsg').textContent = 'Chưa nhập nội dung.'; return; }
+  if(!getUrl()){ toast('Chưa nối Sheet (bấm ⚙ Cấu hình)', 'bad'); return; }
+  var rec = { note_id: noteIdGen(), ngay: noteDateStr(), nguoiTao: getDev(),
+              cuaHang: noteState.store, maKH: noteState.maKH, noiDung: txt,
+              trangThai:'Chua xu ly', ngayXuLy:'' };
+  postToUrl(getUrl(), { action:'luuNote', note_id:rec.note_id, ngay:rec.ngay, nguoiTao:rec.nguoiTao,
+              cuaHang:rec.cuaHang, maKH:rec.maKH, noiDung:rec.noiDung });
+  noteState.list.unshift(rec);   // hien ngay (optimistic), sau do dong bo lai tu Sheet
+  closeNote();
+  goNoteTab();
+  setNoteFilter('chua');
+  toast('Đã lưu ghi chú', 'ok');
+  setTimeout(loadNotes, 1500);
+}
+function goNoteTab(){
+  var btns = document.querySelectorAll('.tabs button');
+  if(btns[5]) go(5, btns[5]);
+}
+function loadNotes(){
+  var el = document.getElementById('noteWrap');
+  if(el) el.innerHTML = '<div class="muted">Đang tải ghi chú...</div>';
+  jsonpGet({ action:'docNote' }, function(data){
+    if(data && data.ok === false && /PIN/i.test(String(data.msg||'')) && getPin()){
+      localStorage.removeItem(LS.pin); showPinGate(); return;
+    }
+    if(data && data.ok){ noteState.list = data.notes || []; }
+    else if(!getUrl()){ noteState.list = []; }
+    renderNotes();
+  });
+}
+function setNoteFilter(f){
+  noteState.filter = f;
+  document.getElementById('nfChua').className = 'btn ' + (f==='chua'?'':'ghost') + ' sm';
+  document.getElementById('nfDa').className   = 'btn ' + (f==='da'?'':'ghost') + ' sm';
+  document.getElementById('nfAll').className  = 'btn ' + (f==='all'?'':'ghost') + ' sm';
+  renderNotes();
+}
+function renderNotes(){
+  var el = document.getElementById('noteWrap'); if(!el) return;
+  var list = noteState.list || [];
+  var chuaCount = list.filter(isChuaXuLy).length;
+  var elChua = document.getElementById('nfChua'); if(elChua) elChua.textContent = 'Chưa xử lý (' + chuaCount + ')';
+  var f = noteState.filter;
+  var view = list.filter(function(n){ if(f==='all') return true; return f==='chua' ? isChuaXuLy(n) : !isChuaXuLy(n); });
+  if(!view.length){ el.innerHTML = '<div class="empty">Không có ghi chú' + (f==='chua'?' chờ xử lý':'') + '.</div>'; return; }
+  var html = '<div style="overflow-x:auto"><table><thead><tr><th>Ngày</th><th>Cửa hàng</th><th>Nội dung</th><th>Người</th><th></th></tr></thead><tbody>';
+  view.forEach(function(n){
+    var act = isChuaXuLy(n)
+      ? '<button type="button" class="btn-donenote btn sm" data-id="' + escAttr(n.note_id) + '" style="background:var(--kelly);white-space:nowrap">✔ Đã xử lý</button>'
+      : '<span class="pill ok">Đã xử lý</span>';
+    html += '<tr><td style="white-space:nowrap">' + esc(n.ngay) + '</td><td>' + esc(n.cuaHang) + '</td><td>' + esc(n.noiDung)
+      + '</td><td class="muted">' + esc(n.nguoiTao) + '</td><td>' + act + '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+function markNoteDone(id){
+  if(!getUrl()) return;
+  postToUrl(getUrl(), { action:'xuLyNote', note_id:id, trangThai:'Da xu ly' });
+  noteState.list.forEach(function(n){ if(n.note_id===id){ n.trangThai='Da xu ly'; n.ngayXuLy=noteDateStr(); } });
+  renderNotes();
+  toast('Đã đánh dấu xử lý', 'ok');
+  setTimeout(loadNotes, 1500);
+}
+
 // ===================== INIT =====================
 function initChips(){
   buildChips('nv1', true, function(name){ state.nv1 = name; loadDoiChieu(); }, state.nv1 || 'Tất cả'); // chọn NV -> tự load
@@ -1540,6 +1671,14 @@ function bootApp(){
   document.getElementById('d1').addEventListener('change', loadDoiChieu); // đổi ngày -> tự load
   document.getElementById('d2').addEventListener('change', renderQuy);     // đổi ngày -> render sổ quỹ
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+  // Delegate: nut Note (mo modal) + nut Da xu ly (danh dau) — gan 1 lan, ap cho ca dong ve dong sau nay
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    var bNote = t.closest ? t.closest('.btn-note') : null;
+    if(bNote){ openNoteModal(bNote.getAttribute('data-store'), bNote.getAttribute('data-makh')); return; }
+    var bDone = t.closest ? t.closest('.btn-donenote') : null;
+    if(bDone){ markNoteDone(bDone.getAttribute('data-id')); return; }
+  });
   if(pinNeeded()){ showPinGate(); } // co URL that + chua co PIN -> chan; nhap dung PIN xong moi bootApp
   else { bootApp(); }
 })();
