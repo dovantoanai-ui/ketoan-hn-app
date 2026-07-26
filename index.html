@@ -97,6 +97,7 @@ tr.dirty td{background:#fff8e1}
   <button onclick="go(3,this); _openTab4();">4 · Soát &amp; Đẩy</button>
   <button onclick="go(4,this); refreshMasterView();">5 · Quản lý cửa hàng</button>
   <button onclick="go(5,this); loadNotes();">6 · Ghi chú</button>
+  <button onclick="go(6,this); nkOpen();">7 · Nhắc nhập kho</button>
 </div>
 
 <main>
@@ -228,6 +229,54 @@ tr.dirty td{background:#fff8e1}
       <div id="noteWrap"></div>
     </div>
   </section>
+
+  <!-- ===== TAB 7: NHẮC NHẬP KHO ===== -->
+  <section class="pane" id="pane6">
+    <div class="card" id="nkNoUrl" style="display:none">
+      <h3>⚙ Chưa cấu hình gửi mail</h3>
+      <div class="muted">Vào ⚙ Cấu hình, dán <b>URL Apps Script gửi mail</b> (đặt dưới hòm nemthanh.dondathang) và token, rồi quay lại đây.</div>
+    </div>
+
+    <div class="row" id="nkSeg" style="gap:6px;margin-bottom:12px">
+      <button type="button" id="nkSegSend" class="btn" onclick="nkTab('send')" style="flex:1">Gửi nhắc mới</button>
+      <button type="button" id="nkSegCho" class="btn ghost" onclick="nkTab('cho')" style="flex:1">Đang chờ nhập kho</button>
+    </div>
+
+    <div id="nkViewSend">
+    <div class="card" id="nkFlow">
+      <div class="muted"><b>Cách dùng:</b> tích cửa hàng cần nhắc → mỗi cửa hàng tích vào sẽ mở ô đính <b>ảnh hóa đơn riêng</b> của nó → xong bấm <b>Gửi tất cả</b>. Mỗi cửa hàng nhận 1 mail riêng kèm đúng ảnh của mình.</div>
+    </div>
+
+    <div class="card" id="nkPickCard">
+      <div class="row" style="align-items:center;gap:8px">
+        <h3 style="margin:0">Chọn cửa hàng cần nhắc</h3>
+        <button class="btn ghost sm" style="margin-left:auto" onclick="nkReload()">↻ Tải danh bạ</button>
+      </div>
+      <input id="nkSearch" class="fld" style="width:100%;padding:9px 10px;border:1px solid var(--bd,#d5e3d8);border-radius:9px;margin-top:8px" placeholder="🔎 Tìm mã hoặc tên — vd 1645, Cầu Giấy">
+      <div class="row" id="nkChips" style="gap:6px;margin:9px 0 2px"></div>
+      <div id="nkList" style="margin-top:8px;border:1px solid var(--bd,#d5e3d8);border-radius:10px;overflow:hidden"><div class="empty" style="padding:14px">Đang tải danh bạ cửa hàng...</div></div>
+      <div id="nkCount" class="muted" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Lời nhắc chung (áp cho tất cả)</h3>
+      <label class="fld">Tiêu đề</label>
+      <input id="nkTitle" style="width:100%" placeholder="Tiêu đề mail">
+      <label class="fld" style="margin-top:8px">Nội dung</label>
+      <textarea id="nkBody" style="width:100%;min-height:120px;line-height:1.5"></textarea>
+      <div class="muted" style="margin-top:6px"><b>{tên CH}</b> tự thay theo từng cửa hàng khi gửi. Ảnh thì mỗi cửa hàng lấy đúng ảnh đã đính ở trên.</div>
+    </div>
+
+    <button class="btn" id="nkSendBtn" style="width:100%;padding:14px;font-size:15px" onclick="nkSend()">📨 Gửi tất cả</button>
+    <div id="nkResult" style="margin-top:10px"></div>
+    </div><!-- /nkViewSend -->
+
+    <div id="nkViewCho" style="display:none">
+      <div class="card" style="padding:8px 10px"><div class="muted"><b>Tự động:</b> cứ 2 ngày hệ thống nhắc lại cửa hàng còn "Chờ" (kèm đúng ảnh hóa đơn). Cửa hàng nhập kho xong thì bấm <b>Đã nhập</b> để dừng. Đủ 5 lần chưa nhập sẽ tự dừng và báo cần gọi điện.</div></div>
+      <div class="card" id="nkChoHead" style="padding:10px 12px"><div class="muted">Đang tải danh sách chờ...</div></div>
+      <div id="nkChoList"></div>
+    </div>
+  </section>
 </main>
 
 <!-- Cấu hình -->
@@ -244,6 +293,10 @@ tr.dirty td{background:#fff8e1}
     <input id="cfgHdUrl" style="width:100%" placeholder="https://script.google.com/macros/s/.../exec">
     <label class="fld" style="margin-top:10px">Token xuất hóa đơn</label>
     <input id="cfgHdToken" style="width:100%" placeholder="Nhập token anh Toàn cấp">
+    <label class="fld" style="margin-top:10px">URL Apps Script Gửi mail nhắc nhập kho (/exec) — đặt dưới hòm nemthanh.dondathang</label>
+    <input id="cfgMailUrl" style="width:100%" placeholder="https://script.google.com/macros/s/.../exec">
+    <label class="fld" style="margin-top:10px">Token gửi mail nhắc nhập kho</label>
+    <input id="cfgMailToken" style="width:100%" placeholder="Nhập token anh Toàn cấp">
     <div class="row" style="margin-top:14px;justify-content:space-between;align-items:center">
       <button class="btn ghost sm" onclick="doiPin()" title="Xóa PIN trên máy này và nhập lại">🔒 Đổi PIN</button>
       <div class="row" style="gap:6px">
@@ -289,11 +342,17 @@ tr.dirty td{background:#fff8e1}
 
 <script>
 // ===================== TIỆN ÍCH =====================
-var APP_VERSION = 'v5.0-multi'; // 20/07/2026: dong goi dung nhieu may (URL nhung san + PIN)
+var APP_VERSION = 'v5.2-nhapkho'; // 26/07/2026: Tab 7 nhac nhap kho + muc "Dang cho" (theo doi + nhac lai tu dong)
 
 // URL Apps Script doi chieu/quy nhung san — de app mo len la chay, khong phai dan tay.
 // Anh Toan dan URL /exec vao trong dau nhay ben duoi (giu nguyen dau nhay). De trong '' = app ve che do cau hinh tay nhu cu.
 var DEFAULT_GS_URL = 'https://script.google.com/macros/s/AKfycbzJjHQVkJoADn3kHXHEYCst9o44hX1HMyGBpAQaBzVWRL26BgpQ_eWpbWU_14DgyxPz_w/exec';
+// URL + token cho Apps Script GUI MAIL nhac nhap kho (dat duoi hom nemthanh.dondathang).
+// De trong -> anh Toan dan qua man Cau hinh. Token phai trung voi CFG.TOKEN ben Code.gs mail.
+// KHONG nhung token vao day: file index.html duoc publish CONG KHAI tren GitHub Pages.
+// Token nhap 1 lan/may o man Cau hinh (luu localStorage), giong cach lam cua token xuat hoa don.
+var DEFAULT_MAIL_URL = '';
+var DEFAULT_MAIL_TOKEN = '';
 
 var LS = {
   url: 'ketoan_hn_gs_url',
@@ -302,6 +361,10 @@ var LS = {
   pin: 'ketoan_hn_pin',          // ma PIN chung — nhap 1 lan/may, kiem tra phia backend
   hdUrl: 'ketoan_hn_hd_url',     // URL Apps Script rieng cho xuat hoa don (API-XuatHoaDon-NemThanh)
   hdToken: 'ketoan_hn_hd_token',
+  mailUrl: 'ketoan_hn_mail_url',     // URL Apps Script gui mail nhac nhap kho (hom dondathang)
+  mailToken: 'ketoan_hn_mail_token', // token gui mail
+  nkTitle: 'ketoan_hn_nk_title',     // mau tieu de mail nhac (luu tren may)
+  nkBody: 'ketoan_hn_nk_body',       // mau noi dung mail nhac (luu tren may)
   quyDay: function(ngay){ return 'ketoan_hn_quyday_' + ngay; }, // sổ quỹ chung 1 ngày, mỗi dòng có nv
   thu: function(ngay, nv){ return 'ketoan_hn_dathu_' + ngay + '_' + nv; },
   phieuHD: function(ngay){ return 'ketoan_hn_cophieu_hd_' + ngay; } // tich "da co phieu giay" o bang XUAT HOA DON (tab 3) — luu tren may, khong dong bo Sheet
@@ -325,6 +388,8 @@ function getNvList(){
 }
 function getDev(){ return localStorage.getItem(LS.dev) || 'may-ketoan-hn'; }
 function getHdUrl(){ return localStorage.getItem(LS.hdUrl) || ''; }
+function getMailUrl(){ return localStorage.getItem(LS.mailUrl) || DEFAULT_MAIL_URL || ''; }
+function getMailToken(){ return localStorage.getItem(LS.mailToken) || DEFAULT_MAIL_TOKEN || ''; }
 function getHdToken(){ return localStorage.getItem(LS.hdToken) || ''; }
 function toast(msg, kind){
   var t = document.getElementById('toast');
@@ -729,6 +794,8 @@ function openCfg(){
   document.getElementById('cfgDev').value = getDev();
   document.getElementById('cfgHdUrl').value = getHdUrl();
   document.getElementById('cfgHdToken').value = getHdToken();
+  document.getElementById('cfgMailUrl').value = getMailUrl();
+  document.getElementById('cfgMailToken').value = getMailToken();
   document.getElementById('cfgMsg').textContent = '';
   document.getElementById('cfg').classList.add('on');
 }
@@ -739,6 +806,8 @@ function saveCfg(){
   localStorage.setItem(LS.dev, document.getElementById('cfgDev').value.trim() || 'may-ketoan-hn');
   localStorage.setItem(LS.hdUrl, document.getElementById('cfgHdUrl').value.trim());
   localStorage.setItem(LS.hdToken, document.getElementById('cfgHdToken').value.trim());
+  localStorage.setItem(LS.mailUrl, document.getElementById('cfgMailUrl').value.trim());
+  localStorage.setItem(LS.mailToken, document.getElementById('cfgMailToken').value.trim());
   closeCfg(); refreshDemoBar();
   if(pinNeeded()){ showPinGate(); return; } // vua nhap URL that ma chua co PIN -> chan lai
   loadNvList(function(){ initChips(); }); toast('Đã lưu cấu hình', 'ok');
@@ -1715,6 +1784,326 @@ function bootApp(){
   if(pinNeeded()){ showPinGate(); } // co URL that + chua co PIN -> chan; nhap dung PIN xong moi bootApp
   else { bootApp(); }
 })();
+
+// ===================== TAB 7: NHAC NHAP KHO =====================
+// Tich chon cua hang -> moi CH mo o dinh anh hoa don RIENG -> gui loat, moi CH 1 mail.
+// Backend: Apps Script dat duoi hom nemthanh.dondathang (action danhBaMail / guiNhacNhapKho / nhacLog).
+var nkState = { loaded:false, list:[], sel:{}, query:'', filter:'all', sending:false, tab:'send', choCount:0 };
+var NK_MAX_PX = 1600;   // canh dai nhat sau khi nen anh
+var NK_QUALITY = 0.7;   // chat luong JPEG khi nen
+
+// Mau mail gui doi tac sieu thi -> dung tieng Viet CO DAU, giong van formal.
+var NK_TITLE_DEFAULT = '[NemThanh] Nhắc nhập kho hàng đã giao – CH {tên CH}';
+var NK_BODY_DEFAULT =
+  'Kính gửi Quầy nhận hàng CH {tên CH},\n\n' +
+  'NemThanh đã giao hàng tới cửa hàng theo hóa đơn đính kèm. ' +
+  'Kính nhờ Anh/Chị hỗ trợ nhập kho (xác nhận nhận hàng trên hệ thống) để đơn hàng không bị treo ạ.\n\n' +
+  'Ảnh hóa đơn/phiếu giao có trong file đính kèm.\n\n' +
+  'Nếu cần đối chiếu thêm, Anh/Chị liên hệ giúp em: [số điện thoại kế toán]\n\n' +
+  'Em cảm ơn Anh/Chị. Trân trọng,\nNemThanh';
+
+// Mo tab: nap mau + tai danh ba (lan dau)
+function nkOpen(){
+  // Can CA URL va token moi dung duoc (token khong nhung san trong file vi app publish cong khai)
+  var hasUrl = !!getMailUrl() && !!getMailToken();
+  document.getElementById('nkNoUrl').style.display = hasUrl ? 'none' : 'block';
+  document.getElementById('nkSeg').style.display = hasUrl ? 'flex' : 'none';
+  document.getElementById('nkViewSend').style.display = hasUrl ? '' : 'none';
+  document.getElementById('nkViewCho').style.display = 'none';
+  document.getElementById('nkPickCard').style.display = hasUrl ? '' : 'none';
+  // nap mau tieu de/noi dung tu may (hoac mac dinh)
+  var t = document.getElementById('nkTitle'), b = document.getElementById('nkBody');
+  if(!t.value) t.value = localStorage.getItem(LS.nkTitle) || NK_TITLE_DEFAULT;
+  if(!b.value) b.value = localStorage.getItem(LS.nkBody) || NK_BODY_DEFAULT;
+  t.oninput = function(){ localStorage.setItem(LS.nkTitle, t.value); };
+  b.oninput = function(){ localStorage.setItem(LS.nkBody, b.value); };
+  var sr = document.getElementById('nkSearch');
+  sr.oninput = function(){ nkState.query = sr.value.trim().toLowerCase(); nkRenderList(); };
+  nkRenderChips();
+  if(hasUrl && !nkState.loaded) nkReload();
+  else nkRenderList();
+  if(hasUrl) nkLoadCho(true);      // cap nhat so dem "Dang cho" tren nut segment
+  nkTab(nkState.tab || 'send');
+}
+
+// Chuyen muc: 'send' (gui moi) / 'cho' (dang cho nhap kho)
+function nkTab(which){
+  nkState.tab = which;
+  var send = which !== 'cho';
+  document.getElementById('nkViewSend').style.display = send ? '' : 'none';
+  document.getElementById('nkViewCho').style.display = send ? 'none' : '';
+  var bs = document.getElementById('nkSegSend'), bc = document.getElementById('nkSegCho');
+  bs.className = send ? 'btn' : 'btn ghost';
+  bc.className = send ? 'btn ghost' : 'btn';
+  if(!send) nkLoadCho(false);
+}
+
+// Tai danh sach dang cho nhap kho
+function nkLoadCho(countOnly){
+  var url = getMailUrl(); if(!url) return;
+  if(!countOnly) document.getElementById('nkChoHead').innerHTML = '<div class="muted">Đang tải danh sách chờ...</div>';
+  jsonpGet({ action:'dsCho' }, function(data){
+    if(!data || !data.ok){ if(!countOnly) document.getElementById('nkChoHead').innerHTML = '<div class="muted">Không tải được danh sách chờ.</div>'; return; }
+    nkState.choCount = data.soCho || 0;
+    nkSegLabel();
+    if(!countOnly) nkRenderCho(data.list || []);
+  }, url);
+}
+
+function nkSegLabel(){
+  document.getElementById('nkSegCho').textContent = 'Đang chờ nhập kho' + (nkState.choCount ? (' (' + nkState.choCount + ')') : '');
+}
+
+function nkRenderCho(list){
+  var cho = list.filter(function(x){ return x.trangThai === 'Cho'; }).length;
+  var denHan = list.filter(function(x){ return x.trangThai === 'Cho' && x.lanToi && x.lanToi <= _nkToday(); }).length;
+  var canGoi = list.filter(function(x){ return x.trangThai === 'Dung'; }).length;
+  document.getElementById('nkChoHead').innerHTML = '<div class="muted">Đang chờ: <b>' + cho + '</b> · Đến hạn nhắc lại: <b>' + denHan + '</b> · Cần gọi điện: <b>' + canGoi + '</b></div>';
+  var box = document.getElementById('nkChoList');
+  if(!list.length){ box.innerHTML = '<div class="card empty">Chưa có cửa hàng nào đang chờ nhập kho.</div>'; return; }
+  var html = '';
+  list.forEach(function(r){
+    var dung = r.trangThai === 'Dung';
+    var pill = dung
+      ? '<span style="font-size:10.5px;font-weight:700;border-radius:20px;padding:2px 8px;margin-left:auto;background:#fdecec;color:#c0392b;border:1px solid #e6b6ae">Đã nhắc ' + r.soLan + ' lần — cần gọi điện</span>'
+      : '<span style="font-size:10.5px;font-weight:700;border-radius:20px;padding:2px 8px;margin-left:auto;background:#fff3e0;color:#b3600f;border:1px solid #f0c98a">Chờ · nhắc ' + r.soLan + ' lần</span>';
+    html += '<div class="card" style="padding:11px">';
+    html +=   '<div class="row" style="align-items:flex-start;gap:8px;margin:0">';
+    html +=     '<div><div style="font-size:13px;font-weight:700">' + esc(r.ma) + ' · ' + esc(r.ten) + '</div><div style="font-size:11px;color:#889">' + esc(r.email) + '</div></div>' + pill;
+    html +=   '</div>';
+    html +=   '<div style="font-size:11px;color:#678;margin-top:6px;display:flex;gap:12px;flex-wrap:wrap"><span>Tạo: ' + esc((r.ngayTao||'').slice(0,10)) + '</span><span>Nhắc cuối: ' + esc((r.lanNhacCuoi||'').slice(0,10)) + '</span>' + (dung ? '<span>Đã dừng tự động</span>' : ('<span>Lần tới: ' + esc(r.lanToi||'') + '</span>')) + '<span>' + (r.nAnh||0) + ' ảnh</span></div>';
+    html +=   '<div class="row" style="gap:8px;margin-top:10px">';
+    html +=     '<button type="button" class="btn nk-done" data-id="' + esc(r.id) + '" style="flex:1">✔ Đã nhập kho</button>';
+    if(!dung) html += '<button type="button" class="btn ghost nk-stop" data-id="' + esc(r.id) + '">Dừng nhắc</button>';
+    html +=   '</div>';
+    html += '</div>';
+  });
+  box.innerHTML = html;
+  var ds = box.querySelectorAll('.nk-done');
+  for(var i=0;i<ds.length;i++){ (function(el){ el.addEventListener('click', function(){ nkMarkDone(el.getAttribute('data-id'), 'Da nhap'); }); })(ds[i]); }
+  var st = box.querySelectorAll('.nk-stop');
+  for(var j=0;j<st.length;j++){ (function(el){ el.addEventListener('click', function(){ nkMarkDone(el.getAttribute('data-id'), 'Dung'); }); })(st[j]); }
+}
+
+// yyyy-mm-dd hom nay (local, khong dung toISOString)
+function _nkToday(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+// Danh dau 1 CH: Da nhap / Dung (POST no-cors -> reload lai danh sach)
+function nkMarkDone(id, tt){
+  var url = getMailUrl(); if(!url) return;
+  postToUrl(url, { action:'danhDauNhapKho', token:getMailToken(), id:id, trangThai:tt },
+    function(){ toast(tt==='Da nhap' ? 'Đã đánh dấu nhập kho' : 'Đã dừng nhắc', 'ok'); setTimeout(function(){ nkLoadCho(false); }, 1200); },
+    function(){ toast('Lỗi mạng', 'bad'); }
+  );
+}
+
+// Tai (hoac tai lai) danh ba cua hang tu Sheet DanhBaMail
+function nkReload(){
+  var url = getMailUrl();
+  if(!url){ document.getElementById('nkList').innerHTML = '<div class="empty" style="padding:14px">Chua cau hinh URL gui mail.</div>'; return; }
+  document.getElementById('nkList').innerHTML = '<div class="empty" style="padding:14px">Dang tai danh ba cua hang...</div>';
+  jsonpGet({ action:'danhBaMail' }, function(data){
+    if(!data || !data.ok || !data.list){
+      document.getElementById('nkList').innerHTML = '<div class="empty" style="padding:14px">Khong tai duoc danh ba (kiem tra URL mail + tab DanhBaMail + quyen Anyone).</div>';
+      return;
+    }
+    nkState.list = data.list; nkState.loaded = true;
+    nkRenderList();
+  }, url);
+}
+
+// Chip loc
+function nkRenderChips(){
+  var defs = [ ['all','Tất cả'], ['sel','Đã tích'], ['wmt','WMT'], ['wmp','WM+'] ];
+  var c = document.getElementById('nkChips'); c.innerHTML = '';
+  defs.forEach(function(d){
+    var span = document.createElement('span');
+    span.className = 'nvchip' + (nkState.filter === d[0] ? ' on' : '');
+    var n = (d[0] === 'sel') ? (' (' + nkCountSel() + ')') : '';
+    span.textContent = d[1] + n;
+    span.addEventListener('click', function(){ nkState.filter = d[0]; nkRenderChips(); nkRenderList(); });
+    c.appendChild(span);
+  });
+}
+
+function nkCountSel(){ var n = 0; for(var k in nkState.sel){ if(nkState.sel.hasOwnProperty(k)) n++; } return n; }
+function nkFind(ma){ for(var i=0;i<nkState.list.length;i++){ if(String(nkState.list[i].ma) === String(ma)) return nkState.list[i]; } return null; }
+
+// Loc theo query + chip
+function nkVisible(){
+  var q = nkState.query, f = nkState.filter;
+  return nkState.list.filter(function(it){
+    if(q){
+      var hay = (String(it.ma)+' '+String(it.ten)+' '+String(it.email)).toLowerCase();
+      if(hay.indexOf(q) < 0) return false;
+    }
+    if(f === 'sel') return !!nkState.sel[it.ma];
+    if(f === 'wmt') return /^1\d{3}$/.test(String(it.ma));
+    if(f === 'wmp') return !/^1\d{3}$/.test(String(it.ma));
+    return true;
+  });
+}
+
+// Ve danh sach (build HTML roi gan su kien bang closure — khong dung onclick chuoi)
+function nkRenderList(){
+  var box = document.getElementById('nkList');
+  if(!nkState.list.length){ box.innerHTML = '<div class="empty" style="padding:14px">Danh ba trong.</div>'; nkUpdateCount(); return; }
+  var vis = nkVisible();
+  if(!vis.length){ box.innerHTML = '<div class="empty" style="padding:14px">Khong co cua hang khop tim kiem.</div>'; nkUpdateCount(); return; }
+  var html = '';
+  vis.forEach(function(it){
+    var ma = esc(it.ma), sel = !!nkState.sel[it.ma];
+    var imgs = sel ? (nkState.sel[it.ma].images || []) : [];
+    html += '<div class="nk-item' + (sel ? ' sel' : '') + '" data-ma="' + ma + '" style="border-bottom:1px solid #eef2ee">';
+    html +=   '<label class="row" style="align-items:center;gap:10px;padding:10px;margin:0;cursor:pointer">';
+    html +=     '<input type="checkbox" class="nk-ck" data-ma="' + ma + '"' + (sel ? ' checked' : '') + ' style="width:20px;height:20px;accent-color:var(--kelly,#1f7a3d)">';
+    html +=     '<div><div style="font-size:13px;font-weight:700">' + ma + ' · ' + esc(it.ten) + '</div><div style="font-size:11px;color:#889">' + esc(it.email) + '</div></div>';
+    html +=   '</label>';
+    if(sel){
+      html += '<div style="padding:0 10px 11px 40px">';
+      html +=   '<label class="nk-add" data-ma="' + ma + '" style="display:block;border:1px dashed var(--kelly,#2a8f4a);background:#fff;border-radius:9px;padding:9px;text-align:center;color:var(--kelly,#1f7a3d);font-weight:600;font-size:12px;cursor:pointer">Đính / chụp ảnh hóa đơn (nhiều ảnh OK)';
+      html +=     '<input type="file" accept="image/*" multiple class="nk-file" data-ma="' + ma + '" style="display:none">';
+      html +=   '</label>';
+      html +=   '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">';
+      imgs.forEach(function(im, idx){
+        html += '<div style="width:52px;height:52px;border-radius:8px;border:1px solid var(--bd,#d5e3d8);position:relative;background-size:cover;background-position:center;background-image:url(' + im.dataUrl + ')">';
+        html +=   '<span class="nk-delimg" data-ma="' + ma + '" data-idx="' + idx + '" style="position:absolute;top:-6px;right:-6px;background:#c0392b;color:#fff;width:17px;height:17px;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer">x</span>';
+        html += '</div>';
+      });
+      html +=   '</div>';
+      html +=   imgs.length
+                 ? '<div style="color:var(--kelly,#1f7a3d);font-weight:700;font-size:11px;margin-top:6px">Đã có ' + imgs.length + ' ảnh — sẵn sàng gửi</div>'
+                 : '<div style="color:#c0392b;font-weight:700;font-size:11px;margin-top:6px">Chưa có ảnh — cửa hàng này sẽ bị bỏ qua khi gửi</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  box.innerHTML = html;
+
+  // Gan su kien bang closure
+  var cks = box.querySelectorAll('.nk-ck');
+  for(var i=0;i<cks.length;i++){ (function(el){ el.addEventListener('change', function(){ nkToggle(el.getAttribute('data-ma'), el.checked); }); })(cks[i]); }
+  var files = box.querySelectorAll('.nk-file');
+  for(var j=0;j<files.length;j++){ (function(el){ el.addEventListener('change', function(){ nkAddFiles(el.getAttribute('data-ma'), el.files); el.value=''; }); })(files[j]); }
+  var dels = box.querySelectorAll('.nk-delimg');
+  for(var k=0;k<dels.length;k++){ (function(el){ el.addEventListener('click', function(ev){ ev.preventDefault(); nkDelImg(el.getAttribute('data-ma'), Number(el.getAttribute('data-idx'))); }); })(dels[k]); }
+
+  nkUpdateCount();
+}
+
+// Tich / bo tich 1 cua hang
+function nkToggle(ma, on){
+  if(on){
+    var it = nkFind(ma); if(!it) return;
+    if(!nkState.sel[ma]) nkState.sel[ma] = { ma:it.ma, ten:it.ten, email:it.email, images:[] };
+  } else {
+    delete nkState.sel[ma];
+  }
+  nkRenderChips(); nkRenderList();
+}
+
+// Them anh cho 1 cua hang (nen truoc khi luu)
+function nkAddFiles(ma, fileList){
+  if(!nkState.sel[ma] || !fileList || !fileList.length) return;
+  var arr = Array.prototype.slice.call(fileList);
+  var remain = arr.length;
+  arr.forEach(function(file){
+    nkCompress(file, function(dataUrl){
+      if(dataUrl && nkState.sel[ma]) nkState.sel[ma].images.push({ name: file.name || 'hoadon.jpg', dataUrl: dataUrl });
+      remain--; if(remain <= 0) nkRenderList();
+    });
+  });
+}
+
+function nkDelImg(ma, idx){
+  if(nkState.sel[ma] && nkState.sel[ma].images){ nkState.sel[ma].images.splice(idx, 1); nkRenderList(); }
+}
+
+// Nen anh ve JPEG canh dai <= NK_MAX_PX
+function nkCompress(file, cb){
+  if(!file || String(file.type).indexOf('image') !== 0){ cb(null); return; }
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var w = img.width, h = img.height, mx = NK_MAX_PX;
+      if(w > mx || h > mx){ if(w >= h){ h = Math.round(h * mx / w); w = mx; } else { w = Math.round(w * mx / h); h = mx; } }
+      try{
+        var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        cb(cv.toDataURL('image/jpeg', NK_QUALITY));
+      }catch(err){ cb(e.target.result); }
+    };
+    img.onerror = function(){ cb(e.target.result); };
+    img.src = e.target.result;
+  };
+  reader.onerror = function(){ cb(null); };
+  reader.readAsDataURL(file);
+}
+
+// Cap nhat dong dem + nut gui
+function nkUpdateCount(){
+  var tong = 0, duAnh = 0, thieu = 0;
+  for(var k in nkState.sel){ if(!nkState.sel.hasOwnProperty(k)) continue; tong++;
+    if((nkState.sel[k].images || []).length) duAnh++; else thieu++; }
+  var msg = tong ? ('Đang tích ' + tong + ' cửa hàng · ' + duAnh + ' đủ ảnh' + (thieu ? (', ' + thieu + ' thiếu ảnh') : '')) : 'Chưa tích cửa hàng nào.';
+  document.getElementById('nkCount').textContent = msg;
+  var btn = document.getElementById('nkSendBtn');
+  btn.disabled = (duAnh === 0) || nkState.sending;
+  btn.textContent = nkState.sending ? 'Đang gửi...' : ('Gửi tất cả — ' + duAnh + ' cửa hàng đủ ảnh' + (thieu ? (' (bỏ qua ' + thieu + ' thiếu ảnh)') : ''));
+}
+
+// Gui: moi CH du anh -> 1 mail
+function nkSend(){
+  if(nkState.sending) return;
+  var url = getMailUrl(), token = getMailToken();
+  if(!url){ toast('Chưa cấu hình URL gửi mail', 'bad'); return; }
+  var items = [];
+  for(var k in nkState.sel){ if(!nkState.sel.hasOwnProperty(k)) continue;
+    var s = nkState.sel[k]; if((s.images || []).length) items.push({ ma:s.ma, ten:s.ten, email:s.email, images:s.images }); }
+  if(!items.length){ toast('Chưa có cửa hàng nào đủ ảnh để gửi', 'bad'); return; }
+  var title = document.getElementById('nkTitle').value || NK_TITLE_DEFAULT;
+  var body = document.getElementById('nkBody').value || NK_BODY_DEFAULT;
+  var reqId = 'R' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+  nkState.sending = true; nkUpdateCount();
+  document.getElementById('nkResult').innerHTML = '<div class="card" style="background:#f3f8f4">Đang gửi ' + items.length + ' mail, vui lòng đợi...</div>';
+
+  postToUrl(url, { action:'guiNhacNhapKho', token:token, reqId:reqId, subject:title, body:body, items:items },
+    function(){ nkPoll(reqId, 0); },
+    function(){ nkState.sending = false; nkUpdateCount(); document.getElementById('nkResult').innerHTML = '<div class="card" style="background:#fdecec;color:#c0392b">Lỗi mạng khi gửi. Thử lại giúp em.</div>'; }
+  );
+}
+
+// Poll ket qua (POST no-cors nen phai doc log qua JSONP)
+function nkPoll(reqId, tries){
+  jsonpGet({ action:'nhacLog', reqId:reqId }, function(data){
+    if(data && data.ok && data.done && data.res){ nkShowResult(data.res); return; }
+    if(tries < 15){ setTimeout(function(){ nkPoll(reqId, tries + 1); }, 2000); }
+    else {
+      nkState.sending = false; nkUpdateCount();
+      document.getElementById('nkResult').innerHTML = '<div class="card" style="background:#fff8ee;color:#8a5a1c">Đã gửi lệnh nhưng chưa nhận được xác nhận. Kiểm tra tab LogNhac trên Sheet hoặc hộp thư đã gửi.</div>';
+    }
+  }, getMailUrl());
+}
+
+// Hien ket qua + bo tich cac CH da gui thanh cong
+function nkShowResult(res){
+  nkState.sending = false;
+  var lines = (res.results || []).map(function(r){
+    return '<div style="font-size:12px;color:' + (r.ok ? '#1c6b34' : '#c0392b') + '">'
+      + (r.ok ? 'OK' : 'LỖI') + ' · ' + esc(r.ma) + ' ' + esc(r.ten)
+      + (r.ok ? (' (' + (r.nAnh || 0) + ' ảnh)') : (' — ' + esc(r.msg || ''))) + '</div>';
+  }).join('');
+  document.getElementById('nkResult').innerHTML =
+    '<div class="card" style="background:#eef8f0;border:1px solid #bfe0c8">'
+    + '<div style="font-weight:700;color:#1c6b34">Đã gửi ' + (res.sent || 0) + '/' + ((res.sent||0)+(res.failed||0)) + ' · từ hòm dondathang · ' + esc(res.at || '') + '</div>'
+    + lines + '</div>';
+  // bo tich cac CH gui thanh cong (giu lai CH loi de gui lai)
+  (res.results || []).forEach(function(r){ if(r.ok) delete nkState.sel[r.ma]; });
+  nkRenderChips(); nkRenderList();
+  setTimeout(function(){ nkLoadCho(true); }, 1500); // cap nhat so dem "Dang cho" sau khi gui (server vua ghi theo doi)
+}
 </script>
 </body>
 </html>
