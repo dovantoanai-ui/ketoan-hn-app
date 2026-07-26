@@ -254,6 +254,24 @@ tr.dirty td{background:#fff8e1}
       </div>
       <input id="nkSearch" class="fld" style="width:100%;padding:9px 10px;border:1px solid var(--bd,#d5e3d8);border-radius:9px;margin-top:8px" placeholder="🔎 Tìm mã hoặc tên — vd 1645, Cầu Giấy">
       <div class="row" id="nkChips" style="gap:6px;margin:9px 0 2px"></div>
+
+      <!-- Them / sua cua hang trong danh ba (ghi thang len Sheet) -->
+      <div id="nkAddLink" style="margin-top:9px;border:1px dashed var(--kelly,#2a8f4a);background:var(--lt,#eaf3ec);border-radius:9px;padding:9px;text-align:center;color:var(--kelly,#1f7a3d);font-weight:700;font-size:12.5px;cursor:pointer" onclick="nkFormMo('')">➕ Thêm cửa hàng mới vào danh bạ</div>
+      <div id="nkForm" style="display:none;border:1px solid var(--kelly,#2a8f4a);border-radius:10px;padding:11px;margin-top:9px;background:#fbfffc">
+        <h3 id="nkFormTitle" style="margin:0 0 4px;font-size:13.5px">Thêm cửa hàng mới</h3>
+        <div class="row" style="gap:8px;margin-top:6px">
+          <div style="flex:0 0 34%"><label class="fld">Mã CH</label><input id="nkFMa" style="width:100%" placeholder="vd 1699"></div>
+          <div style="flex:1"><label class="fld">Tên cửa hàng</label><input id="nkFTen" style="width:100%" placeholder="vd WMT OceanPark"></div>
+        </div>
+        <label class="fld" style="margin-top:8px">Email quầy nhận hàng</label>
+        <input id="nkFEmail" style="width:100%" placeholder="vd chebien.1699@winmart.masangroup.com" inputmode="email">
+        <div class="row" style="gap:8px;margin-top:11px">
+          <button type="button" class="btn" style="flex:1" onclick="nkFormLuu()">💾 Lưu vào danh bạ</button>
+          <button type="button" class="btn ghost" onclick="nkFormDong()">Hủy</button>
+        </div>
+        <div id="nkFormMsg" class="muted" style="margin-top:8px">Lưu xong tự tích sẵn cửa hàng này để anh đính ảnh gửi luôn.</div>
+      </div>
+
       <div id="nkList" style="margin-top:8px;border:1px solid var(--bd,#d5e3d8);border-radius:10px;overflow:hidden"><div class="empty" style="padding:14px">Đang tải danh bạ cửa hàng...</div></div>
       <div id="nkCount" class="muted" style="margin-top:8px"></div>
     </div>
@@ -342,7 +360,7 @@ tr.dirty td{background:#fff8e1}
 
 <script>
 // ===================== TIỆN ÍCH =====================
-var APP_VERSION = 'v5.2-nhapkho'; // 26/07/2026: Tab 7 nhac nhap kho + muc "Dang cho" (theo doi + nhac lai tu dong)
+var APP_VERSION = 'v5.3-nhapkho'; // 26/07/2026: Tab 7 + muc Dang cho + them/sua cua hang trong danh ba
 
 // URL Apps Script doi chieu/quy nhung san — de app mo len la chay, khong phai dan tay.
 // Anh Toan dan URL /exec vao trong dau nhay ben duoi (giu nguyen dau nhay). De trong '' = app ve che do cau hinh tay nhu cu.
@@ -1955,10 +1973,14 @@ function nkRenderList(){
     var ma = esc(it.ma), sel = !!nkState.sel[it.ma];
     var imgs = sel ? (nkState.sel[it.ma].images || []) : [];
     html += '<div class="nk-item' + (sel ? ' sel' : '') + '" data-ma="' + ma + '" style="border-bottom:1px solid #eef2ee">';
-    html +=   '<label class="row" style="align-items:center;gap:10px;padding:10px;margin:0;cursor:pointer">';
-    html +=     '<input type="checkbox" class="nk-ck" data-ma="' + ma + '"' + (sel ? ' checked' : '') + ' style="width:20px;height:20px;accent-color:var(--kelly,#1f7a3d)">';
-    html +=     '<div><div style="font-size:13px;font-weight:700">' + ma + ' · ' + esc(it.ten) + '</div><div style="font-size:11px;color:#889">' + esc(it.email) + '</div></div>';
-    html +=   '</label>';
+    html +=   '<div class="row" style="align-items:center;gap:8px;padding:10px;margin:0">';
+    // Nut Sua nam NGOAI label -> bam Sua khong lam tich/bo tich cua hang
+    html +=     '<label style="display:flex;align-items:center;gap:10px;flex:1;margin:0;cursor:pointer">';
+    html +=       '<input type="checkbox" class="nk-ck" data-ma="' + ma + '"' + (sel ? ' checked' : '') + ' style="width:20px;height:20px;accent-color:var(--kelly,#1f7a3d)">';
+    html +=       '<div><div style="font-size:13px;font-weight:700">' + ma + ' · ' + esc(it.ten) + '</div><div style="font-size:11px;color:#889">' + esc(it.email) + '</div></div>';
+    html +=     '</label>';
+    html +=     '<button type="button" class="nk-edit" data-ma="' + ma + '" style="font-size:11.5px;color:var(--kelly,#1f7a3d);border:1px solid var(--bd,#d5e3d8);border-radius:7px;padding:4px 8px;background:#fff;font-weight:700">✎ Sửa</button>';
+    html +=   '</div>';
     if(sel){
       html += '<div style="padding:0 10px 11px 40px">';
       html +=   '<label class="nk-add" data-ma="' + ma + '" style="display:block;border:1px dashed var(--kelly,#2a8f4a);background:#fff;border-radius:9px;padding:9px;text-align:center;color:var(--kelly,#1f7a3d);font-weight:600;font-size:12px;cursor:pointer">Đính / chụp ảnh hóa đơn (nhiều ảnh OK)';
@@ -1987,8 +2009,101 @@ function nkRenderList(){
   for(var j=0;j<files.length;j++){ (function(el){ el.addEventListener('change', function(){ nkAddFiles(el.getAttribute('data-ma'), el.files); el.value=''; }); })(files[j]); }
   var dels = box.querySelectorAll('.nk-delimg');
   for(var k=0;k<dels.length;k++){ (function(el){ el.addEventListener('click', function(ev){ ev.preventDefault(); nkDelImg(el.getAttribute('data-ma'), Number(el.getAttribute('data-idx'))); }); })(dels[k]); }
+  var eds = box.querySelectorAll('.nk-edit');
+  for(var q=0;q<eds.length;q++){ (function(el){ el.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); nkFormMo(el.getAttribute('data-ma')); }); })(eds[q]); }
 
   nkUpdateCount();
+}
+
+// ===== Them / sua cua hang trong danh ba (ghi thang len Sheet DanhBaMail) =====
+var nkFormMode = { sua:false, maGoc:'' };
+
+// ma rong = them moi; co ma = sua cua hang do
+function nkFormMo(ma){
+  var f = document.getElementById('nkForm');
+  var it = ma ? nkFind(ma) : null;
+  nkFormMode.sua = !!it;
+  nkFormMode.maGoc = it ? String(it.ma) : '';
+  document.getElementById('nkFormTitle').textContent = it ? ('Sửa cửa hàng ' + it.ma) : 'Thêm cửa hàng mới';
+  document.getElementById('nkFMa').value = it ? it.ma : (document.getElementById('nkSearch').value || '').trim();
+  document.getElementById('nkFTen').value = it ? it.ten : '';
+  document.getElementById('nkFEmail').value = it ? it.email : '';
+  document.getElementById('nkFMa').disabled = !!it;   // sua thi khong doi ma (ma la khoa theo doi nhap kho)
+  document.getElementById('nkFormMsg').textContent = it
+    ? 'Đổi email khi cửa hàng chuyển quầy nhận hàng. Lưu xong mọi máy đều thấy.'
+    : 'Lưu xong tự tích sẵn cửa hàng này để anh đính ảnh gửi luôn.';
+  document.getElementById('nkFormMsg').style.color = '';
+  f.style.display = '';
+  document.getElementById('nkAddLink').style.display = 'none';
+  (it ? document.getElementById('nkFEmail') : document.getElementById('nkFMa')).focus();
+}
+function nkFormDong(){
+  document.getElementById('nkForm').style.display = 'none';
+  document.getElementById('nkAddLink').style.display = '';
+  document.getElementById('nkFMa').disabled = false;
+}
+function nkFormBao(msg, loi){
+  var el = document.getElementById('nkFormMsg');
+  el.textContent = msg;
+  el.style.color = loi ? '#c0392b' : '';
+}
+
+function nkFormLuu(){
+  var url = getMailUrl(), token = getMailToken();
+  if(!url || !token){ nkFormBao('Chưa cấu hình URL/token gửi mail.', true); return; }
+  var ma = document.getElementById('nkFMa').value.trim();
+  var ten = document.getElementById('nkFTen').value.trim();
+  var email = document.getElementById('nkFEmail').value.trim();
+  if(!ma){ nkFormBao('Chưa nhập Mã cửa hàng.', true); return; }
+  if(!email){ nkFormBao('Chưa nhập Email.', true); return; }
+  // Kiem tra dang email co ban (khong chan ten mien, vi con dung cho AEON / Sói Biển...)
+  if(!/^[^@\s,;]+@[^@\s,;]+\.[^@\s,;]+$/.test(email)){ nkFormBao('Email chưa đúng dạng: ' + email, true); return; }
+
+  var ghiDe = nkFormMode.sua;
+  if(!ghiDe){
+    // Kiem tra trung ngay tren may (danh ba da tai san) -> hoi anh Toan truoc, khong ghi de am tham
+    var cu = nkFind(ma);
+    if(cu){
+      if(String(cu.email).toLowerCase() === email.toLowerCase()){
+        nkFormBao('Cửa hàng ' + ma + ' đã có sẵn với đúng email này rồi.', true); return;
+      }
+      if(!confirm('Cửa hàng ' + ma + ' đã có trong danh bạ.\n\nEmail hiện tại:\n' + cu.email + '\n\nĐổi thành:\n' + email + ' ?')) return;
+      ghiDe = true;
+    }
+  }
+
+  var reqId = 'C' + Date.now() + '_' + Math.floor(Math.random()*1000);
+  nkFormBao('Đang lưu lên Sheet...');
+  postToUrl(url, { action:'luuCuaHang', token:token, reqId:reqId, ma:ma, ten:ten, email:email, ghiDe:ghiDe },
+    function(){ nkFormPoll(reqId, 0, ma); },
+    function(){ nkFormBao('Lỗi mạng khi lưu.', true); }
+  );
+}
+
+// POST no-cors khong doc duoc phan hoi -> poll ket qua qua nhacLog
+function nkFormPoll(reqId, tries, ma){
+  jsonpGet({ action:'nhacLog', reqId:reqId }, function(data){
+    if(data && data.ok && data.done && data.res){
+      var r = data.res;
+      if(r.ok){
+        toast(r.che === 'them' ? ('Đã thêm cửa hàng ' + r.ma) : ('Đã cập nhật cửa hàng ' + r.ma), 'ok');
+        nkFormDong();
+        // tai lai danh ba tu Sheet roi tu tich cua hang vua them/sua
+        jsonpGet({ action:'danhBaMail' }, function(d2){
+          if(d2 && d2.ok && d2.list){ nkState.list = d2.list; nkState.loaded = true; }
+          var it = nkFind(ma);
+          if(it && !nkState.sel[it.ma]) nkState.sel[it.ma] = { ma:it.ma, ten:it.ten, email:it.email, images:[] };
+          document.getElementById('nkSearch').value = ''; nkState.query = '';
+          nkRenderChips(); nkRenderList();
+        }, getMailUrl());
+        return;
+      }
+      if(r.trung){ nkFormBao('Cửa hàng ' + r.ma + ' đã có (email: ' + r.emailCu + '). Bấm Lưu lần nữa để đổi.', true); nkFormMode.sua = true; return; }
+      nkFormBao(r.msg || 'Không lưu được.', true); return;
+    }
+    if(tries < 10){ setTimeout(function(){ nkFormPoll(reqId, tries + 1, ma); }, 1500); }
+    else nkFormBao('Chưa nhận được xác nhận. Kiểm tra tab DanhBaMail trên Sheet.', true);
+  }, getMailUrl());
 }
 
 // Tich / bo tich 1 cua hang
