@@ -89,6 +89,11 @@ table.khg td.g:empty::after{content:'—';color:#c8d2cc}
 table.khg td.g.dirty{background:#fff8e1;font-weight:600}
 table.khg input.kma{width:120px;border:1px solid var(--line);border-radius:5px;padding:3px 6px;font-size:12px}
 table.khg input.kma.dirty{background:#fff8e1;border-color:#c9b784}
+input.ci.spd{background:#fff8e1;border-color:#c9b784;font-weight:600}
+input.ci[disabled]{background:#f2f2f2;color:#999;cursor:not-allowed}
+.spcot{font-size:11px;line-height:1.7;color:#666;background:#fafafa;border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-bottom:8px}
+.spcot b{color:#333}
+.spcot .xau{color:#c0392b;font-weight:600}
 table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border-radius:5px;padding:2px 5px;font-size:12px;text-align:right}
 </style>
 </head>
@@ -327,7 +332,7 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
   <section class="pane" id="pane8">
     <div class="card">
       <h3>🏷️ Bảng mã sản phẩm</h3>
-      <div class="muted">Tên sản phẩm trên vận đơn ↔ Mã MISA. Bảng này là nguồn cho app khi dựng file đẩy MISA (tab 4). <b>Lưu ý:</b> file <code>bang-ma-san-pham.json</code> trên máy văn phòng vẫn là nguồn riêng cho 4 kênh đẩy tự động — sửa mã ở đây thì nhớ sửa cùng ở file đó rồi chạy <code>sync-ma.py</code>, tránh hai nơi lệch nhau.</div>
+      <div class="muted">Tên sản phẩm trên vận đơn ↔ Mã MISA. App đọc tab <code>DanhMucSanPham</code> <b>theo tên tiêu đề cột</b> nên anh xếp cột kiểu gì cũng đúng; khi lưu chỉ ghi đúng những ô anh sửa, các cột khác trên Sheet giữ nguyên. Bảng này là nguồn cho app khi dựng file đẩy MISA (tab 4). <b>Lưu ý:</b> file <code>bang-ma-san-pham.json</code> trên máy văn phòng vẫn là nguồn riêng cho 4 kênh đẩy tự động — sửa mã ở đây thì nhớ sửa cùng ở file đó rồi chạy <code>sync-ma.py</code>, tránh hai nơi lệch nhau.</div>
     </div>
     <div id="spWrap"><div class="card empty">Đang chờ tải...</div></div>
   </section>
@@ -397,7 +402,7 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
 
 <script>
 // ===================== TIỆN ÍCH =====================
-var APP_VERSION = 'v5.6-sotencuahang'; // 29/07/2026: them nut Soat ten cua hang (chi doc) o tab 8
+var APP_VERSION = 'v5.7-mapcotsp'; // 29/07/2026: tab 9 doc/ghi Sheet theo TEN TIEU DE cot, ghi theo tung o
 
 // URL Apps Script doi chieu/quy nhung san — de app mo len la chay, khong phai dan tay.
 // Anh Toan dan URL /exec vao trong dau nhay ben duoi (giu nguyen dau nhay). De trong '' = app ve che do cau hinh tay nhu cu.
@@ -453,7 +458,7 @@ function toast(msg, kind){
 }
 
 // ===================== STATE =====================
-var state = { nv1: null, nv2: null, dc: null, nvAll: [], autoThu: 0, filterHD: { cua:[], vat:[], thu:[] }, chieuData: null, filterChieuPhieu: 'all', masterData: null, mcSearchVal: '', khgData: null, khgSearchVal: '', khgMa: {}, khgGia: {}, khgSp: null, spData: null, spBaoCao: null, khgSoatHtml: null };
+var state = { nv1: null, nv2: null, dc: null, nvAll: [], autoThu: 0, filterHD: { cua:[], vat:[], thu:[] }, chieuData: null, filterChieuPhieu: 'all', masterData: null, mcSearchVal: '', khgData: null, khgSearchVal: '', khgMa: {}, khgGia: {}, khgSp: null, spData: null, spBaoCao: null, khgSoatHtml: null, spMap: null, spXoa: [] };
 // Chuan hoa chuoi: bo dau, ve chu thuong — dung de so sanh/tim kiem khong phan biet dau/hoa-thuong (vd loc "Xuat HD", tim cua hang).
 function normVN(s){
   return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/\s+/g,' ').trim();
@@ -1984,13 +1989,23 @@ function _khgSoatHtml(d){
 }
 
 // ===================== TAB 8: BẢNG MÃ SẢN PHẨM =====================
-// Ghi DE toan bo tab DanhMucSanPham tren Sheet (chi ~22 dong nen ghi de cho phep xoa dong).
+// v5.7 (29/07/2026): backend doc/ghi tab DanhMucSanPham THEO TEN TIEU DE COT.
+// Khi luu chi gui nhung O ANH SUA (edits) + dong them + dong xoa, khong ghi de ca bang.
 var COT_SP = ['tenApp','tenKhac','ma','tenMisa','dvt','heso','kho','tkKho','tkDT','tkGV'];
 var NHAN_SP = { tenApp:'Tên sản phẩm (trên vận đơn)', tenKhac:'Tên khác (cách nhau dấu ;)', ma:'Mã MISA',
   tenMisa:'Tên hàng trên MISA', dvt:'ĐVT', heso:'Hệ số', kho:'Kho', tkKho:'TK kho', tkDT:'TK doanh thu', tkGV:'TK giá vốn' };
 var RONG_SP = { tenApp:170, tenKhac:170, ma:90, tenMisa:200, dvt:70, heso:60, kho:70, tkKho:70, tkDT:80, tkGV:80 };
+var SO_SP = { heso:1, tkKho:1, tkDT:1, tkGV:1 };
 
 function _openTab8(){ if(!state.spData) loadSanPham(); }
+
+// So cot 1,2,3... -> chu A,B,C... cho anh doi chieu voi Google Sheet.
+function _spColChu(n){
+  var t = '';
+  n = Number(n) || 0;
+  while(n > 0){ var r = (n - 1) % 26; t = String.fromCharCode(65 + r) + t; n = Math.floor((n - 1) / 26); }
+  return t;
+}
 
 function loadSanPham(){
   var url = getUrl(), token = misaToken();
@@ -2004,29 +2019,67 @@ function loadSanPham(){
       return;
     }
     state.spData = d.sp || [];
+    state.spMap = { header: d.header || [], map: d.map || {}, thieu: d.thieu || [] };
+    state.spXoa = [];
+    // Chup lai ban goc de biet o nao anh that su sua.
+    state.spData.forEach(function(rec){
+      rec._g = {};
+      COT_SP.forEach(function(c){ rec._g[c] = rec[c] == null ? '' : String(rec[c]); });
+    });
     renderSanPhamFull();
   }, url);
+}
+
+// Dai thong tin: app dang hieu cot nao la cot nao tren Sheet.
+function _spDaiCot(){
+  var mp = (state.spMap && state.spMap.map) || {};
+  var hd = (state.spMap && state.spMap.header) || [];
+  var thieu = (state.spMap && state.spMap.thieu) || [];
+  var ph = [];
+  COT_SP.forEach(function(c){
+    var col = mp[c];
+    if(col){
+      var tenThat = hd[col - 1] || '';
+      ph.push('<b>' + esc(NHAN_SP[c]) + '</b> ← cột ' + _spColChu(col) + (tenThat ? ' «' + esc(tenThat) + '»' : ''));
+    } else {
+      ph.push('<span class="xau">' + esc(NHAN_SP[c]) + ' ← Sheet chưa có cột này</span>');
+    }
+  });
+  var t = '<div class="spcot">App đang đọc tab <code>DanhMucSanPham</code> theo tên tiêu đề cột: ' + ph.join(' · ');
+  if(thieu.length){
+    t += '<br>⚠️ Có ' + thieu.length + ' cột app không tìm thấy trên Sheet — những ô đó bị khoá, không sửa được. '
+      + 'Anh vào Sheet đặt tên tiêu đề dòng 1 cho đúng (ví dụ "Mã MISA", "Tên SP") rồi bấm ↻ Tải lại.';
+  }
+  return t + '</div>';
+}
+
+function _spInput(key, val, coCot){
+  var isNum = !!SO_SP[key];
+  return '<td><input class="ci' + (isNum ? ' num' : '') + '" data-f="' + key + '"'
+    + (coCot ? '' : ' disabled')
+    + ' value="' + escAttr(val == null ? '' : val) + '"'
+    + ' style="width:100%;min-width:' + (RONG_SP[key] || 100) + 'px;border:1px solid var(--line);border-radius:5px;padding:4px 6px;font-size:12px"></td>';
 }
 
 function renderSanPhamFull(){
   var el = document.getElementById('spWrap');
   if(!el || !state.spData) return;
+  var mp = (state.spMap && state.spMap.map) || {};
   var html = '<div class="card">';
   html += '<div class="row" style="margin-bottom:8px">'
     + '<button class="btn sm" id="btnSpThem">+ Thêm sản phẩm</button>'
     + '<button class="btn ghost sm" id="btnSpTai">↻ Tải lại</button>'
     + '<button class="btn ghost sm" id="btnSpDienMa">🔧 Điền mã MISA còn thiếu</button>'
     + '<span class="muted" style="margin-left:auto">' + state.spData.length + ' sản phẩm</span></div>';
-  html += '<div style="overflow-x:auto"><table><thead><tr><th>Xóa</th>';
+  html += _spDaiCot();
+  html += '<div style="overflow-x:auto"><table><thead><tr><th>Xóa</th><th>Dòng</th>';
   COT_SP.forEach(function(c){ html += '<th>' + esc(NHAN_SP[c] || c) + '</th>'; });
   html += '</tr></thead><tbody>';
   state.spData.forEach(function(rec, idx){
     html += '<tr data-si="' + idx + '">'
-      + '<td><button type="button" class="btn btn-spxoa" data-si="' + idx + '" style="padding:4px 8px;font-size:12px;background:#c0392b">🗑️</button></td>';
-    COT_SP.forEach(function(c){
-      var isNum = (c === 'heso' || c === 'tkKho' || c === 'tkDT' || c === 'tkGV');
-      html += oInput(c, rec[c] == null ? '' : rec[c], RONG_SP[c] || 100, isNum);
-    });
+      + '<td><button type="button" class="btn btn-spxoa" data-si="' + idx + '" style="padding:4px 8px;font-size:12px;background:#c0392b">🗑️</button></td>'
+      + '<td class="muted" style="font-size:11px;text-align:center">' + (rec.dong ? rec.dong : 'mới') + '</td>';
+    COT_SP.forEach(function(c){ html += _spInput(c, rec[c], !!mp[c]); });
     html += '</tr>';
   });
   html += '</tbody></table></div>';
@@ -2038,7 +2091,7 @@ function renderSanPhamFull(){
   var b1 = document.getElementById('btnSpThem');
   if(b1) b1.addEventListener('click', themSanPhamMoi);
   var b2 = document.getElementById('btnSpTai');
-  if(b2) b2.addEventListener('click', function(){ state.spData = null; loadSanPham(); });
+  if(b2) b2.addEventListener('click', function(){ state.spData = null; state.spMap = null; state.spXoa = []; loadSanPham(); });
   var b3 = document.getElementById('btnSpLuu');
   if(b3) b3.addEventListener('click', luuSanPham);
   var b4 = document.getElementById('btnSpDienMa');
@@ -2050,6 +2103,21 @@ function renderSanPhamFull(){
   }
   el.querySelectorAll('.btn-spxoa').forEach(function(b){
     b.addEventListener('click', function(){ xoaSanPhamRow(Number(b.getAttribute('data-si'))); });
+  });
+  // Danh dau o vua sua (vang) de anh nhin ra minh doi gi truoc khi luu.
+  el.querySelectorAll('input.ci').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var tr = inp.parentNode && inp.parentNode.parentNode;
+      if(!tr) return;
+      var idx = Number(tr.getAttribute('data-si'));
+      var rec = state.spData[idx];
+      if(!rec) return;
+      var key = inp.getAttribute('data-f');
+      rec[key] = inp.value;
+      var goc = rec._g ? (rec._g[key] == null ? '' : rec._g[key]) : '';
+      if(!rec.dong || String(inp.value) !== String(goc)) inp.classList.add('spd');
+      else inp.classList.remove('spd');
+    });
   });
 }
 
@@ -2087,47 +2155,84 @@ function dienMaThieuSP(){
 
 function themSanPhamMoi(){
   if(!state.spData) state.spData = [];
-  var rec = {};
-  COT_SP.forEach(function(c){ rec[c] = ''; });
+  var rec = { dong: 0, _g: {} };
+  COT_SP.forEach(function(c){ rec[c] = ''; rec._g[c] = ''; });
   rec.tenApp = '(Sản phẩm mới)';
   rec.heso = 1;
   state.spData.unshift(rec);
   renderSanPhamFull();
   toast('Đã thêm 1 dòng — điền thông tin rồi bấm Lưu', 'ok');
 }
+
 function xoaSanPhamRow(idx){
   if(!state.spData || !state.spData[idx]) return;
-  var ten = state.spData[idx].tenApp || state.spData[idx].tenMisa || '(chưa đặt tên)';
+  var rec = state.spData[idx];
+  var ten = rec.tenApp || rec.tenMisa || '(chưa đặt tên)';
   if(!confirm('Xóa "' + ten + '" khỏi bảng mã?\n(Chỉ có hiệu lực thật sau khi bấm "Lưu lên Sheet")')) return;
+  if(rec.dong) state.spXoa.push(rec.dong);
   state.spData.splice(idx, 1);
   renderSanPhamFull();
   toast('Đã xóa "' + ten + '" khỏi bảng — nhớ bấm Lưu', 'ok');
 }
 
-function luuSanPham(){
-  var url = getUrl(), token = misaToken();
-  var msgEl = document.getElementById('spMsg');
-  if(!url || !token){ toast('Chưa cấu hình URL/Token', 'bad'); return; }
-  if(!state.spData || !state.spData.length){ toast('Chưa có dữ liệu', 'bad'); return; }
+// Gom o dang hien thi vao state truoc khi tinh thay doi.
+function _spThuVeState(){
   document.querySelectorAll('#spWrap tr[data-si]').forEach(function(tr){
     var idx = Number(tr.getAttribute('data-si'));
     var rec = state.spData[idx];
     if(!rec) return;
     COT_SP.forEach(function(c){
       var inp = tr.querySelector('input[data-f="' + c + '"]');
-      if(inp) rec[c] = inp.value;
+      if(inp && !inp.disabled) rec[c] = inp.value;
     });
   });
-  var rows = state.spData.filter(function(r){
-    return String(r.tenApp || '').trim() || String(r.ma || '').trim();
+}
+
+function luuSanPham(){
+  var url = getUrl(), token = misaToken();
+  var msgEl = document.getElementById('spMsg');
+  if(!url || !token){ toast('Chưa cấu hình URL/Token', 'bad'); return; }
+  if(!state.spData){ toast('Chưa có dữ liệu', 'bad'); return; }
+  var mp = (state.spMap && state.spMap.map) || {};
+  _spThuVeState();
+
+  var edits = [], them = [];
+  state.spData.forEach(function(rec){
+    if(!rec.dong){
+      // dong moi: bo qua neu chua dien gi
+      if(!String(rec.tenApp || '').trim() && !String(rec.ma || '').trim()) return;
+      if(String(rec.tenApp || '').trim() === '(Sản phẩm mới)' && !String(rec.ma || '').trim()) return;
+      var m = {};
+      COT_SP.forEach(function(c){ if(mp[c]) m[c] = rec[c]; });
+      them.push(m);
+      return;
+    }
+    COT_SP.forEach(function(c){
+      if(!mp[c]) return;
+      var moi = rec[c] == null ? '' : String(rec[c]);
+      var goc = (rec._g && rec._g[c] != null) ? String(rec._g[c]) : '';
+      if(moi !== goc) edits.push({ dong: rec.dong, key: c, val: moi });
+    });
   });
-  if(!rows.length){ toast('Không có dòng hợp lệ', 'bad'); return; }
-  if(!confirm('Ghi đè toàn bộ bảng mã trên Sheet bằng ' + rows.length + ' sản phẩm đang hiển thị?\n\nLƯU Ý: bảng này CHỈ dùng cho app. File bang-ma-san-pham.json trên máy văn phòng vẫn là nguồn cho 4 kênh đẩy MISA — sửa mã ở đây thì nhớ sửa cùng ở file đó rồi chạy sync-ma.py.')) return;
+  var xoa = (state.spXoa || []).slice();
+
+  if(!edits.length && !them.length && !xoa.length){ toast('Chưa có thay đổi nào để lưu', 'bad'); return; }
+
+  var mo = [];
+  if(edits.length) mo.push('sửa ' + edits.length + ' ô');
+  if(them.length)  mo.push('thêm ' + them.length + ' dòng');
+  if(xoa.length)   mo.push('xóa ' + xoa.length + ' dòng (dòng ' + xoa.join(', ') + ')');
+  if(!confirm('Ghi lên Sheet: ' + mo.join(', ') + '?\n\n'
+    + 'App chỉ ghi đúng những ô này, các cột khác trên tab DanhMucSanPham giữ nguyên.\n\n'
+    + 'LƯU Ý: bảng này CHỈ dùng cho app. File bang-ma-san-pham.json trên máy văn phòng vẫn là nguồn cho 4 kênh đẩy MISA — sửa mã ở đây thì nhớ sửa cùng ở file đó rồi chạy sync-ma.py.')) return;
+
   if(msgEl) msgEl.textContent = 'Đang lưu...';
-  postToUrl(url, { token:token, action:'ghiSanPham', rows:rows }, function(){
-    if(msgEl) msgEl.textContent = 'Đã gửi lệnh ghi ' + rows.length + ' sản phẩm lúc ' + new Date().toLocaleTimeString('vi-VN') + '. Nhớ đồng bộ bang-ma-san-pham.json trên máy văn phòng.';
+  postToUrl(url, { token:token, action:'ghiSanPham', edits:edits, them:them, xoa:xoa }, function(){
+    if(msgEl) msgEl.textContent = 'Đã gửi lệnh ' + mo.join(', ') + ' lúc ' + new Date().toLocaleTimeString('vi-VN')
+      + '. Bấm ↻ Tải lại để xem kết quả trên Sheet.';
     toast('Đã lưu bảng mã', 'ok');
     SPMAP = null; NVMAP = null; GIAMAP = null;   // buoc tab 4 nap lai bang ma moi
+    state.spXoa = [];
   }, function(){
     if(msgEl) msgEl.textContent = 'Lỗi khi lưu — kiểm tra kết nối rồi bấm Lưu lại.';
     toast('Lỗi khi lưu', 'bad');
