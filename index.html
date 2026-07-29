@@ -72,6 +72,11 @@ tr.soat-loi td{background:#fbeaea}
 .pill-loi{background:#fbeaea;color:#d64545;border-radius:12px;padding:1px 8px;font-size:11px;font-weight:600}
 .pill-ok{background:#e7f3ec;color:#1f7a4d;border-radius:12px;padding:1px 8px;font-size:11px;font-weight:600}
 .soat-chk{width:16px;height:16px;accent-color:#1f7a4d}
+/* v5.8: bang Keo danh muc chuan ve (muc 8) */
+.keo-canh{border-left:3px solid #c9821b;background:#fdf6e8;padding:8px 10px;font-size:12.5px;border-radius:0 6px 6px 0;margin:8px 0;line-height:1.55}
+input.keo-ten{border:1px solid #c9b784;background:#fffdf5;border-radius:5px;padding:3px 6px;font-size:12.5px}
+select.keo-kieu{font-size:12.5px;padding:3px 5px;border:1px solid var(--line);border-radius:5px;background:#fff}
+.card.keo details>summary{padding:4px 0}
 .ed{width:80px;border:1px solid #c9b784;background:#fffdf5;border-radius:5px;padding:3px 5px;text-align:right;font-size:12.5px}
 tr.dirty td{background:#fff8e1}
 /* Tab 8: bang Ma KH & Gia — 2 cot dau ghim trai, dong tieu de ghim tren */
@@ -402,7 +407,7 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
 
 <script>
 // ===================== TIỆN ÍCH =====================
-var APP_VERSION = 'v5.7-mapcotsp'; // 29/07/2026: tab 9 doc/ghi Sheet theo TEN TIEU DE cot, ghi theo tung o
+var APP_VERSION = 'v5.8-keodanhmuc'; // 29/07/2026: muc 8 co nut Keo danh muc chuan ve - doi chieu 3 noi roi ghi theo tung o
 
 // URL Apps Script doi chieu/quy nhung san — de app mo len la chay, khong phai dan tay.
 // Anh Toan dan URL /exec vao trong dau nhay ben duoi (giu nguyen dau nhay). De trong '' = app ve che do cau hinh tay nhu cu.
@@ -458,7 +463,7 @@ function toast(msg, kind){
 }
 
 // ===================== STATE =====================
-var state = { nv1: null, nv2: null, dc: null, nvAll: [], autoThu: 0, filterHD: { cua:[], vat:[], thu:[] }, chieuData: null, filterChieuPhieu: 'all', masterData: null, mcSearchVal: '', khgData: null, khgSearchVal: '', khgMa: {}, khgGia: {}, khgSp: null, spData: null, spBaoCao: null, khgSoatHtml: null, spMap: null, spXoa: [] };
+var state = { nv1: null, nv2: null, dc: null, nvAll: [], autoThu: 0, filterHD: { cua:[], vat:[], thu:[] }, chieuData: null, filterChieuPhieu: 'all', masterData: null, mcSearchVal: '', khgData: null, khgSearchVal: '', khgMa: {}, khgGia: {}, khgSp: null, spData: null, spBaoCao: null, khgSoatHtml: null, khgKeoData: null, spMap: null, spXoa: [] };
 // Chuan hoa chuoi: bo dau, ve chu thuong — dung de so sanh/tim kiem khong phan biet dau/hoa-thuong (vd loc "Xuat HD", tim cua hang).
 function normVN(s){
   return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/\s+/g,' ').trim();
@@ -1756,8 +1761,10 @@ function renderKhGiaFull(){
     + '<button class="btn" id="btnKhgLuu">💾 Lưu lên Sheet</button>'
     + '<button class="btn ghost sm" id="btnKhgTai">↻ Tải lại</button>'
     + '<button class="btn ghost sm" id="btnKhgSoat">🔍 Soát tên cửa hàng</button>'
+    + '<button class="btn ghost sm" id="btnKhgKeo">\uD83D\uDCE5 K\u00e9o danh m\u1ee5c chu\u1ea9n v\u1ec1</button>'
     + '<span class="muted" id="khgMsg" style="margin-left:8px"></span></div>';
   html += '<div id="khgSoatBox"></div>';
+  html += '<div id="khgKeoBox"></div>';
   html += '<div class="muted" style="margin-top:8px">Bấm vào ô giá để sửa. Đơn giá tính theo <b>đơn vị MISA</b> (ĐVT ghi dưới tên sản phẩm) — cùng đơn vị với cột "Đơn giá" trong file đẩy MISA. Ô nền vàng là ô đã sửa, chưa lưu.</div>';
   html += '</div>';
   el.innerHTML = html;
@@ -1778,10 +1785,14 @@ function renderKhGiaFull(){
   });
   var bS = document.getElementById('btnKhgSoat');
   if(bS) bS.addEventListener('click', soatTenCuaHang);
+  var bK = document.getElementById('btnKhgKeo');
+  if(bK) bK.addEventListener('click', keoDanhMucChuan);
   if(state.khgSoatHtml){
     var sbEl = document.getElementById('khgSoatBox');
     if(sbEl) sbEl.innerHTML = state.khgSoatHtml;
   }
+  // Bang doi chieu danh muc ve lai tu state, giu nguyen nhung o anh da tick.
+  if(state.khgKeoData) _keoRender();
   el.addEventListener('click', khgClickCell);
   el.addEventListener('input', khgInputMa);
 
@@ -1986,6 +1997,303 @@ function _khgSoatHtml(d){
   h += '<div class="muted" style="margin-top:8px">B\u1ea3n so\u00e1t n\u00e0y ch\u1ec9 \u0111\u1ec3 nh\u00ecn, ch\u01b0a s\u1eeda g\u00ec. Anh xem xong r\u1ed3i m\u00ecnh b\u00e0n c\u00e1ch \u0111\u1ed3ng b\u1ed9.</div>';
   h += '</div>';
   return h;
+}
+
+// ---------------------------------------------------------------------------
+// v5.8 (29/07/2026) - "Keo danh muc chuan ve" cho muc 8.
+// Nguon chuan duy nhat la tab DanhMucSieuThi. App doi chieu voi MasterCuaHang,
+// BangGia va HoaDon 30 ngay gan nhat, hien bang cho anh Toan tick.
+// Tick xong moi ghi len Sheet, va ghi theo tung o - khong ghi de ca bang.
+// ---------------------------------------------------------------------------
+
+function keoDanhMucChuan(){
+  var url = getUrl(), token = misaToken();
+  var msgEl = document.getElementById('khgMsg');
+  if(!url || !token){ toast('Chưa cấu hình URL/Token', 'bad'); return; }
+  if(!state.khgData){ toast('Chờ bảng giá tải xong rồi bấm lại', 'bad'); return; }
+  if(msgEl) msgEl.textContent = 'Đang đối chiếu với danh mục chuẩn...';
+  jsonpGet({ action:'soatDanhMuc', token:token, days:30 }, function(d){
+    if(msgEl) msgEl.textContent = '';
+    if(!d || !d.ok){
+      toast((d && d.msg) || 'Không gọi được — đã Triển khai phiên bản Code.gs mới chưa?', 'bad');
+      return;
+    }
+    state.khgKeoData = _keoChuanBi(d);
+    _keoRender();
+    var t = _keoTongViec();
+    toast(t ? ('Có ' + t + ' việc cần anh duyệt') : 'Mọi nơi đã khớp danh mục chuẩn', t ? 'bad' : 'ok');
+  }, url);
+}
+
+// Chuyen ket qua backend thanh trang thai app giu duoc (co o tick, co ten anh chon).
+function _keoChuanBi(d){
+  var ng = Number(d.nguong) || 85;
+  var o = {
+    luc: new Date().toLocaleTimeString('vi-VN'),
+    nChuan: Number(d.nChuan) || 0,
+    days: Number(d.days) || 30,
+    nguong: ng,
+    mcLoi: d.mcLoi || '',
+    mcGhiDuoc: !!d.mcGhiDuoc,
+    hetGoiY: !!d.hetGoiY,
+    mcThem: [], mcLe: [], giaLe: [], hdLe: []
+  };
+  (d.mcThem || []).forEach(function(x){
+    o.mcThem.push({ ten: x.ten || '', ma: x.ma || '', tick: true });
+  });
+  (d.mcLe || []).forEach(function(x){
+    var dm = Number(x.diem) || 0;
+    var manh = dm >= ng && !!x.goiY;
+    o.mcLe.push({ dong: Number(x.dong) || 0, ten: x.ten || '', diem: dm,
+                  chon: manh ? x.goiY : '', tick: manh });
+  });
+  (d.giaLe || []).forEach(function(x){
+    var dg = Number(x.diem) || 0;
+    var manh2 = dg >= ng && !!x.goiY;
+    o.giaLe.push({ ten: x.ten || '', n: Number(x.n) || 0, diem: dg,
+                   chon: manh2 ? x.goiY : '', tick: manh2 });
+  });
+  // Nhom van don la lich su da chay - mac dinh KHONG dung vao, chi bao cho anh biet.
+  (d.hdLe || []).forEach(function(x){
+    o.hdLe.push({ ten: x.ten || '', n: Number(x.n) || 0, diem: Number(x.diem) || 0,
+                  chon: x.goiY || '', kieu: 'bo' });
+  });
+  return o;
+}
+
+function _keoTongViec(){
+  var o = state.khgKeoData;
+  if(!o) return 0;
+  return o.mcThem.length + o.mcLe.length + o.giaLe.length + o.hdLe.length;
+}
+
+// Tra ma khach hang chuan cua 1 ten, lay tu danh muc dang mo o muc 8.
+function _keoMaCua(ten){
+  var t = _normStore(ten);
+  if(!t) return '';
+  var ch = (state.khgData && state.khgData.ch) || [];
+  for(var i = 0; i < ch.length; i++){
+    if(_normStore(ch[i].store) === t) return ch[i].maKH || '';
+  }
+  return '';
+}
+
+// Danh sach goi y ten chuan cho o nhap (dung chung cho ca 3 nhom).
+function _keoDatalist(){
+  var ch = (state.khgData && state.khgData.ch) || [];
+  var h = '<datalist id="keoDmList">';
+  for(var i = 0; i < ch.length; i++){
+    h += '<option value="' + escAttr(ch[i].store) + '"></option>';
+  }
+  return h + '</datalist>';
+}
+
+function _keoRender(){
+  var box = document.getElementById('khgKeoBox');
+  if(!box) return;
+  var o = state.khgKeoData;
+  if(!o){ box.innerHTML = ''; return; }
+
+  var h = '<div class="card keo" style="margin-top:10px">'
+    + '<div><b>Kéo danh mục chuẩn về</b> — lúc ' + esc(o.luc) + '</div>'
+    + '<div class="muted" style="margin:4px 0 8px">Nguồn chuẩn: <b>DanhMucSieuThi</b> — '
+    + fmt(o.nChuan) + ' cửa hàng. Chưa ghi gì lên Sheet, anh tick xong mới ghi.</div>';
+
+  if(o.mcLoi) h += '<div class="keo-canh">' + esc(o.mcLoi) + '</div>';
+  if(o.hetGoiY) h += '<div class="keo-canh">Tên lạ nhiều quá nên app chỉ đoán tên chuẩn cho một phần. Những dòng còn lại để trống, anh chọn tay.</div>';
+
+  h += _keoNhomThem(o);
+  h += _keoNhomSua('mcLe', 'Tên lạ ở MasterCuaHang',
+        'Có bên bảng xuất hóa đơn nhưng không có trong danh mục chuẩn. App chỉ đoán tên gần nhất, dòng nền đỏ là đoán yếu — anh kiểm lại trước khi tick.',
+        o.mcLe, o.nguong, true);
+  h += _keoNhomSua('giaLe', 'BangGia có tên mồ côi',
+        'Dòng giá mang tên không còn trong danh mục — app không gắn được vào cửa hàng nào.',
+        o.giaLe, o.nguong, false);
+  h += _keoNhomHd(o);
+
+  h += '<div class="row" style="margin-top:10px">'
+    + '<button class="btn" id="btnKeoGhi">✔ Ghi các dòng đã tick lên Sheet</button>'
+    + '<button class="btn ghost sm" id="btnKeoBo">Bỏ tick hết</button>'
+    + '<span class="muted" id="keoDem" style="margin-left:8px"></span></div>';
+
+  h += '<div class="keo-canh" style="margin-top:10px">'
+    + '<b>Hai chỗ cần để ý.</b> Một là nhóm tên lạ trên vận đơn chạm vào tab <b>HoaDon</b> — đây là lịch sử hóa đơn đã chạy, mặc định app để "Chỉ báo, không sửa". '
+    + 'Hai là phần đoán tên chuẩn chỉ là <i>suy đoán theo độ giống chuỗi</i>, không phải chắc chắn — dòng khớp dưới '
+    + o.nguong + '% app không tự tick.</div>';
+
+  h += _keoDatalist();
+  h += '</div>';
+  box.innerHTML = h;
+
+  var card = box.querySelector('.card.keo');
+  if(card){
+    card.addEventListener('change', _keoOnChange);
+    card.addEventListener('input', _keoOnChange);
+  }
+  var bG = document.getElementById('btnKeoGhi');
+  if(bG) bG.addEventListener('click', ghiDongBoDanhMuc);
+  var bB = document.getElementById('btnKeoBo');
+  if(bB) bB.addEventListener('click', _keoBoTick);
+  _keoDemApply();
+}
+
+// Nhom 1: co trong danh muc chuan nhung MasterCuaHang chua co -> them dong moi.
+function _keoNhomThem(o){
+  var ds = o.mcThem;
+  if(!ds.length) return '<div class="muted" style="margin:6px 0">✅ MasterCuaHang không thiếu tên nào.</div>';
+  var h = '<details style="margin:8px 0"><summary style="cursor:pointer"><b>Thiếu ở MasterCuaHang</b> — '
+    + ds.length + ' cửa hàng</summary>'
+    + '<div class="muted" style="margin:4px 0 6px">Có trong danh mục chuẩn nhưng bảng xuất hóa đơn chưa khai báo. App sẽ thêm dòng mới vào cuối bảng, các cột khác để trống.</div>'
+    + '<table class="soat"><thead><tr><th style="width:40px">Lấy</th><th>Tên cửa hàng</th>'
+    + '<th style="width:150px">Mã khách hàng</th></tr></thead><tbody>';
+  ds.forEach(function(x, i){
+    h += '<tr><td><input type="checkbox" class="soat-chk keo-chk" data-g="mcThem" data-i="' + i + '"'
+      + (x.tick ? ' checked' : '') + '></td>'
+      + '<td>' + esc(x.ten) + '</td>'
+      + '<td>' + (x.ma ? esc(x.ma) : '<span class="pill-loi">chưa có mã</span>') + '</td></tr>';
+  });
+  return h + '</tbody></table></details>';
+}
+
+// Nhom 2 va 3: ten dang co bi lech -> doi ve ten chuan.
+function _keoNhomSua(g, tieuDe, mota, ds, nguong, coDong){
+  if(!ds.length) return '<div class="muted" style="margin:6px 0">✅ ' + esc(tieuDe) + ': không có dòng nào.</div>';
+  var h = '<details open style="margin:8px 0"><summary style="cursor:pointer"><b>' + esc(tieuDe) + '</b> — '
+    + ds.length + ' tên</summary>'
+    + '<div class="muted" style="margin:4px 0 6px">' + esc(mota) + '</div>'
+    + '<table class="soat"><thead><tr><th style="width:40px">Sửa</th><th>Tên đang có</th>'
+    + '<th style="width:64px">Khớp</th><th>Đổi thành (tên chuẩn)</th></tr></thead><tbody>';
+  ds.forEach(function(x, i){
+    var yeu = (Number(x.diem) || 0) < nguong;
+    var phu = '';
+    if(x.n) phu += ' <span class="muted">(' + x.n + ' dòng giá)</span>';
+    if(coDong && x.dong) phu += ' <span class="muted">[dòng ' + x.dong + ']</span>';
+    h += '<tr' + (yeu ? ' class="soat-loi"' : '') + '>'
+      + '<td><input type="checkbox" class="soat-chk keo-chk" data-g="' + g + '" data-i="' + i + '"'
+      + (x.tick ? ' checked' : '') + '></td>'
+      + '<td>' + esc(x.ten) + phu + '</td>'
+      + '<td class="muted">' + (Number(x.diem) || 0) + '%</td>'
+      + '<td><input class="keo-ten" list="keoDmList" data-g="' + g + '" data-i="' + i + '" value="'
+      + escAttr(x.chon || '') + '" placeholder="— chọn tên chuẩn —" style="width:min(300px,60vw)"></td></tr>';
+  });
+  return h + '</tbody></table></details>';
+}
+
+// Nhom 4: ten la tren van don. Mac dinh chi bao, khong sua gi.
+function _keoNhomHd(o){
+  var ds = o.hdLe;
+  if(!ds.length) return '<div class="muted" style="margin:6px 0">✅ Vận đơn ' + o.days + ' ngày gần đây không có tên lạ.</div>';
+  var h = '<details open style="margin:8px 0"><summary style="cursor:pointer"><b>Tên lạ trên vận đơn '
+    + o.days + ' ngày</b> — ' + ds.length + ' tên</summary>'
+    + '<div class="muted" style="margin:4px 0 6px">Nhân viên gõ tên không khớp danh mục. Đây là lịch sử đã chạy nên app không tự sửa — anh chọn cách xử lý từng dòng.</div>'
+    + '<table class="soat"><thead><tr><th>Tên trên vận đơn</th><th style="width:80px">Số đơn</th>'
+    + '<th style="width:210px">Xử lý</th><th>Tên chuẩn (khi đổi)</th></tr></thead><tbody>';
+  ds.forEach(function(x, i){
+    h += '<tr><td>' + esc(x.ten) + '</td>'
+      + '<td class="muted">' + (Number(x.n) || 0) + '</td>'
+      + '<td><select class="keo-kieu" data-g="hdLe" data-i="' + i + '">'
+      + '<option value="bo"' + (x.kieu === 'bo' ? ' selected' : '') + '>Chỉ báo, không sửa</option>'
+      + '<option value="dm"' + (x.kieu === 'dm' ? ' selected' : '') + '>Thêm vào danh mục chuẩn</option>'
+      + '<option value="doi"' + (x.kieu === 'doi' ? ' selected' : '') + '>Đổi về tên chuẩn</option>'
+      + '</select></td>'
+      + '<td><input class="keo-ten" list="keoDmList" data-g="hdLe" data-i="' + i + '" value="'
+      + escAttr(x.chon || '') + '" placeholder="— chọn tên chuẩn —" style="width:min(300px,60vw)"></td></tr>';
+  });
+  return h + '</tbody></table></details>';
+}
+
+// Mot ham lo su kien cho ca o tick, o nhap ten va o chon cach xu ly.
+function _keoOnChange(e){
+  var t = e.target;
+  var o = state.khgKeoData;
+  if(!t || !t.classList || !o) return;
+  var g = t.getAttribute('data-g');
+  var i = Number(t.getAttribute('data-i'));
+  var ds = g ? o[g] : null;
+  if(!ds || !ds[i]) return;
+  if(t.classList.contains('keo-chk')) ds[i].tick = !!t.checked;
+  else if(t.classList.contains('keo-kieu')) ds[i].kieu = String(t.value || 'bo');
+  else if(t.classList.contains('keo-ten')) ds[i].chon = String(t.value || '').trim();
+  else return;
+  _keoDemApply();
+}
+
+function _keoBoTick(){
+  var o = state.khgKeoData;
+  if(!o) return;
+  o.mcThem.forEach(function(x){ x.tick = false; });
+  o.mcLe.forEach(function(x){ x.tick = false; });
+  o.giaLe.forEach(function(x){ x.tick = false; });
+  o.hdLe.forEach(function(x){ x.kieu = 'bo'; });
+  _keoRender();
+}
+
+// Gop nhung dong anh Toan da tick thanh goi du lieu gui len Sheet.
+function _keoPayload(){
+  var p = { mcThem: [], mcSua: [], dmThem: [], giaSua: [], hdSua: [] };
+  var o = state.khgKeoData;
+  if(!o) return p;
+  o.mcThem.forEach(function(x){
+    if(x.tick && x.ten) p.mcThem.push({ ten: x.ten, ma: x.ma || '' });
+  });
+  o.mcLe.forEach(function(x){
+    if(x.tick && x.chon && x.chon !== x.ten && x.dong){
+      p.mcSua.push({ dong: x.dong, ten: x.chon, ma: _keoMaCua(x.chon) });
+    }
+  });
+  o.giaLe.forEach(function(x){
+    if(x.tick && x.chon && x.chon !== x.ten) p.giaSua.push({ cu: x.ten, moi: x.chon });
+  });
+  o.hdLe.forEach(function(x){
+    if(x.kieu === 'dm' && x.ten) p.dmThem.push({ ten: x.ten, ma: '' });
+    else if(x.kieu === 'doi' && x.chon && x.chon !== x.ten) p.hdSua.push({ cu: x.ten, moi: x.chon });
+  });
+  return p;
+}
+
+function _keoDemApply(){
+  var el = document.getElementById('keoDem');
+  var bG = document.getElementById('btnKeoGhi');
+  var p = _keoPayload();
+  var n = p.mcThem.length + p.mcSua.length + p.dmThem.length + p.giaSua.length + p.hdSua.length;
+  if(el){
+    el.textContent = n
+      ? ('Đã tick ' + n + ' dòng — thêm ' + p.mcThem.length + ' · sửa tên '
+         + (p.mcSua.length + p.giaSua.length + p.hdSua.length) + ' · thêm vào danh mục ' + p.dmThem.length)
+      : 'Chưa tick dòng nào.';
+  }
+  if(bG) bG.disabled = !n;
+}
+
+function ghiDongBoDanhMuc(){
+  var url = getUrl(), token = misaToken();
+  var msgEl = document.getElementById('khgMsg');
+  if(!url || !token){ toast('Chưa cấu hình URL/Token', 'bad'); return; }
+  var p = _keoPayload();
+  var n = p.mcThem.length + p.mcSua.length + p.dmThem.length + p.giaSua.length + p.hdSua.length;
+  if(!n){ toast('Chưa tick dòng nào', 'bad'); return; }
+  var mo = 'Ghi lên Sheet:\n'
+    + '• MasterCuaHang: thêm ' + p.mcThem.length + ', sửa tên ' + p.mcSua.length + '\n'
+    + '• DanhMucSieuThi: thêm ' + p.dmThem.length + '\n'
+    + '• BangGia: đổi tên ' + p.giaSua.length + '\n'
+    + '• HoaDon (lịch sử): đổi tên ' + p.hdSua.length + '\n\nTiếp tục?';
+  if(!confirm(mo)) return;
+  if(msgEl) msgEl.textContent = 'Đang ghi...';
+  postToUrl(url, {
+    token: token, action: 'dongBoDanhMuc',
+    mcThem: p.mcThem, mcSua: p.mcSua, dmThem: p.dmThem, giaSua: p.giaSua, hdSua: p.hdSua
+  }, function(){
+    toast('Đã gửi lệnh ghi — đang tải lại danh mục', 'ok');
+    setTimeout(function(){
+      state.khgKeoData = null;
+      state.khgData = null;
+      loadKhGia();
+      toast('Đã ghi xong. Bấm "Kéo danh mục chuẩn về" lần nữa để đối chiếu lại.', 'ok');
+    }, 2500);
+  }, function(){
+    if(msgEl) msgEl.textContent = 'Lỗi khi ghi — kiểm tra kết nối rồi bấm Ghi lại.';
+    toast('Lỗi khi ghi', 'bad');
+  });
 }
 
 // ===================== TAB 8: BẢNG MÃ SẢN PHẨM =====================
