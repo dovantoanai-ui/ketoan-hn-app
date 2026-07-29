@@ -74,6 +74,22 @@ tr.soat-loi td{background:#fbeaea}
 .soat-chk{width:16px;height:16px;accent-color:#1f7a4d}
 .ed{width:80px;border:1px solid #c9b784;background:#fffdf5;border-radius:5px;padding:3px 5px;text-align:right;font-size:12.5px}
 tr.dirty td{background:#fff8e1}
+/* Tab 8: bang Ma KH & Gia — 2 cot dau ghim trai, dong tieu de ghim tren */
+.khgbox{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:8px}
+table.khg{border-collapse:separate;border-spacing:0;font-size:12.5px;white-space:nowrap;width:auto;min-width:100%}
+table.khg th,table.khg td{border-bottom:1px solid var(--line);padding:5px 8px;background:#fff;text-align:left}
+table.khg thead th{position:sticky;top:0;z-index:3;background:#eef4f0;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px;vertical-align:bottom}
+table.khg .k1{position:sticky;left:0;z-index:2;box-shadow:1px 0 0 var(--line);min-width:200px;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+table.khg .k2{position:sticky;left:200px;z-index:2;box-shadow:1px 0 0 var(--line);min-width:130px}
+table.khg thead th.k1,table.khg thead th.k2{z-index:5;background:#e7ede9}
+table.khg tbody td.k1{font-weight:600;background:#fbfdfc}
+table.khg tbody td.k2{background:#fbfdfc}
+table.khg td.g{cursor:pointer;min-width:86px;color:var(--ink)}
+table.khg td.g:empty::after{content:'—';color:#c8d2cc}
+table.khg td.g.dirty{background:#fff8e1;font-weight:600}
+table.khg input.kma{width:120px;border:1px solid var(--line);border-radius:5px;padding:3px 6px;font-size:12px}
+table.khg input.kma.dirty{background:#fff8e1;border-color:#c9b784}
+table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border-radius:5px;padding:2px 5px;font-size:12px;text-align:right}
 </style>
 </head>
 <body>
@@ -98,6 +114,8 @@ tr.dirty td{background:#fff8e1}
   <button onclick="go(4,this); refreshMasterView();">5 · Quản lý cửa hàng</button>
   <button onclick="go(5,this); loadNotes();">6 · Ghi chú</button>
   <button onclick="go(6,this); nkOpen();">7 · Nhắc nhập kho</button>
+  <button onclick="go(7,this); _openTab7();">8 · Mã KH &amp; Giá</button>
+  <button onclick="go(8,this); _openTab8();">9 · Mã sản phẩm</button>
 </div>
 
 <main>
@@ -295,6 +313,25 @@ tr.dirty td{background:#fff8e1}
       <div id="nkChoList"></div>
     </div>
   </section>
+
+  <!-- ===== TAB 8: MA KH & GIA ===== -->
+  <section class="pane" id="pane7">
+    <div class="card">
+      <h3>🔑 Mã khách hàng &amp; bảng giá</h3>
+      <div class="muted">Liệt kê <b>toàn bộ</b> cửa hàng (không phụ thuộc ngày). Sửa Mã khách hàng và Đơn giá từng sản phẩm ngay tại đây rồi bấm "Lưu lên Sheet" — mã ghi vào tab <code>DanhMucSieuThi</code>, giá ghi vào tab <code>BangGia</code>. Chỉ ghi lên Sheet, không đụng tới file trên máy văn phòng.</div>
+    </div>
+    <div id="khgWrap"><div class="card empty">Đang chờ tải...</div></div>
+  </section>
+
+  <!-- ===== TAB 8: BẢNG MÃ SẢN PHẨM ===== -->
+  <section class="pane" id="pane8">
+    <div class="card">
+      <h3>🏷️ Bảng mã sản phẩm</h3>
+      <div class="muted">Tên sản phẩm trên vận đơn ↔ Mã MISA. Bảng này là nguồn cho app khi dựng file đẩy MISA (tab 4). <b>Lưu ý:</b> file <code>bang-ma-san-pham.json</code> trên máy văn phòng vẫn là nguồn riêng cho 4 kênh đẩy tự động — sửa mã ở đây thì nhớ sửa cùng ở file đó rồi chạy <code>sync-ma.py</code>, tránh hai nơi lệch nhau.</div>
+    </div>
+    <div id="spWrap"><div class="card empty">Đang chờ tải...</div></div>
+  </section>
+
 </main>
 
 <!-- Cấu hình -->
@@ -360,7 +397,7 @@ tr.dirty td{background:#fff8e1}
 
 <script>
 // ===================== TIỆN ÍCH =====================
-var APP_VERSION = 'v5.3-nhapkho'; // 26/07/2026: Tab 7 + muc Dang cho + them/sua cua hang trong danh ba
+var APP_VERSION = 'v5.4-magia'; // 29/07/2026: them tab 8 (Ma KH & Gia) + tab 9 (Ma san pham), giu nguyen tab 7 Nhac nhap kho
 
 // URL Apps Script doi chieu/quy nhung san — de app mo len la chay, khong phai dan tay.
 // Anh Toan dan URL /exec vao trong dau nhay ben duoi (giu nguyen dau nhay). De trong '' = app ve che do cau hinh tay nhu cu.
@@ -416,7 +453,7 @@ function toast(msg, kind){
 }
 
 // ===================== STATE =====================
-var state = { nv1: null, nv2: null, dc: null, nvAll: [], autoThu: 0, filterHD: { cua:[], vat:[], thu:[] }, chieuData: null, filterChieuPhieu: 'all', masterData: null, mcSearchVal: '' };
+var state = { nv1: null, nv2: null, dc: null, nvAll: [], autoThu: 0, filterHD: { cua:[], vat:[], thu:[] }, chieuData: null, filterChieuPhieu: 'all', masterData: null, mcSearchVal: '', khgData: null, khgSearchVal: '', khgMa: {}, khgGia: {}, khgSp: null, spData: null };
 // Chuan hoa chuoi: bo dau, ve chu thuong — dung de so sanh/tim kiem khong phan biet dau/hoa-thuong (vd loc "Xuat HD", tim cua hang).
 function normVN(s){
   return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/\s+/g,' ').trim();
@@ -1324,6 +1361,7 @@ function dayPhieuDaChon(){
 // ---------- Nut MOI: tao file Excel chuan MISA de tu Nhap tu excel (khong day tu dong) ----------
 // Mirror logic build_misa_banhang.py: 1 inv = 1 chung tu, quy doi don vi theo he so, TK No 1111/1311 theo trang thai TT.
 var SPMAP=null, NVMAP=null;   // _normStore(alias)->entry SP ; _normStore(ten NV)->ma NV
+var GIAMAP=null;              // 'cuahang||sanpham' (da chuan hoa) -> don gia, doc tu tab BangGia
 // 67 cot header MISA (dong 8 template "Ban hang") - phai giu nguyen thu tu de wizard ghep cot.
 var HEADERS67=['Hình thức bán hàng','Phương thức thanh toán','Kiêm phiếu xuất kho','Lập kèm hóa đơn','Đã lập hóa đơn','Ngày hạch toán (*)','Ngày chứng từ (*)','Số chứng từ (*)','Số phiếu xuất','Mẫu số HĐ','Ký hiệu HĐ','Số hóa đơn','Ngày hóa đơn','Mã khách hàng','Tên khách hàng','Địa chỉ','Mã số thuế','Đơn vị giao đại lý','Người nộp','Nộp vào TK','Tên ngân hàng','Diễn giải/Lý do nộp','Lý do xuất','Mã nhân viên bán hàng','Số chứng từ kèm theo (Phiếu thu)','Số chứng từ kèm theo (Phiếu xuất)','Hạn thanh toán','Mã hàng (*)','Thuộc combo','Tên hàng','Là dòng ghi chú','Hàng khuyến mại','Chiết khấu thương mại','TK Tiền/Chi phí/Nợ (*)','TK Doanh thu/Có (*)','ĐVT','Số lượng','Đơn giá','Thành tiền','Tỷ lệ CK (%)','Tiền chiết khấu','TK chiết khấu','Giá tính thuế XK','% thuế xuất khẩu','Tiền thuế xuất khẩu','TK thuế xuất khẩu','% thuế GTGT','% thuế suất KHAC','Tiền thuế GTGT','TK thuế GTGT','Biển kiểm soát ','HH không TH trên tờ khai thuế GTGT','Mã khoản mục chi phí','Mã đơn vị','Mã đối tượng THCP','Mã công trình','Số đơn đặt hàng','Số hợp đồng bán','Mã thống kê','Số khế ước cho vay','CP không hợp lý','Mã kho','TK giá vốn','TK Kho','Đơn giá vốn','Tiền vốn','Hàng hóa giữ hộ/bán hộ'];
 function _introRows(){
@@ -1347,6 +1385,7 @@ function ensureSPMap(cb){
     if(!d || !d.ok){ setMisaMsg('⚠ Không đọc được bảng mã sản phẩm (đã deploy Code.gs mới có action mapSP chưa?).'); return; }
     SPMAP={}; (d.sp||[]).forEach(function(e){ (e.aliases||[]).forEach(function(a){ SPMAP[_normStore(a)]=e; }); });
     NVMAP={}; var nv=d.nv||{}; for(var k in nv){ if(nv.hasOwnProperty(k)) NVMAP[_normStore(k)]=nv[k]; }
+    GIAMAP=d.gia||{};
     cb();
   });
 }
@@ -1360,6 +1399,13 @@ function ensureXLSX(cb){
   s.onload=function(){ window.__xlsxLoading=false; cb(); };
   s.onerror=function(){ window.__xlsxLoading=false; toast('Không tải được thư viện Excel','bad'); setMisaMsg('⚠ Không tải được thư viện Excel (SheetJS). Nút này cần có mạng khi bấm. Kiểm tra mạng rồi thử lại.'); };
   document.head.appendChild(s);
+}
+// Tra don gia trong bang gia (tab 8) cho 1 cua hang + 1 san pham. Khong co thi tra 0.
+function _giaBang(store, e){
+  if(!GIAMAP || !e) return 0;
+  var g=GIAMAP[_normStore(store)+'||'+_normStore(e.tenMisa||'')];
+  if(!g && e.tenApp) g=GIAMAP[_normStore(store)+'||'+_normStore(e.tenApp)];
+  return Number(g)||0;
 }
 function _misaRow(r, soCT, soXK, ngay, dien){
   var o={};
@@ -1421,7 +1467,14 @@ function _buildExcel(ids, startNo){
       if(!e){ warns.push(inv+' ('+v.store+'): SP "'+l.sp+'" chưa có mã MISA — bỏ dòng'); return; }
       var heso=Number(e.heso)||1; var sl=_num(l.sl)*heso; var tt=_num(l.tien);
       if(sl<=0){ warns.push(inv+' ('+v.store+'): "'+l.sp+'" SL/hệ số = 0 — bỏ dòng'); return; }
+      // Bang gia (tab 8) chi DIEN BU khi hoa don khong co tien; neu ca hai deu co thi chi CANH BAO, khong tu sua tien.
+      var gBang=_giaBang(v.store, e);
+      if(tt<=0){
+        if(gBang>0){ tt=Math.round(sl*gBang); warns.push(inv+' ('+v.store+'): "'+l.sp+'" hóa đơn không có tiền — đã điền bù theo bảng giá '+fmt(gBang)+'đ/'+(e.dvt||'đv')); }
+        else { warns.push(inv+' ('+v.store+'): "'+l.sp+'" không có tiền và bảng giá cũng chưa có — bỏ dòng'); return; }
+      }
       var dg=Math.round(tt/sl*100)/100;
+      if(gBang>0 && Math.abs(dg-gBang)>Math.max(1, gBang*0.01)) warns.push(inv+' ('+v.store+'): "'+l.sp+'" đơn giá hóa đơn '+fmt(dg)+'đ lệch bảng giá '+fmt(gBang)+'đ — kiểm tra lại');
       invRows.push({ daTT:daTT, maKH:maKH, store:v.store, nvCode:nvCode, e:e, sl:sl, dg:dg, tt:tt, first:first });
       first=false;
     });
@@ -1630,6 +1683,336 @@ function theoDoiLenhMC(row, action, url, token, lanThu){
       if(action === 'nap_master') refreshMasterView(); // tai lai bang de thay ngay du lieu vua nap tu may
     }, url);
   }, 3000);
+}
+
+// ===================== TAB 7: MÃ KHÁCH HÀNG & BẢNG GIÁ =====================
+// Bang liet ke TOAN BO cua hang (khong phu thuoc ngay). Sua Ma khach hang + Don gia tung san pham
+// -> bam Luu -> ghi thang len Sheet (tab DanhMucSieuThi cot Ma khach hang, va tab BangGia).
+// O gia de dang chu (nhe cho may), bam vao moi bien thanh o nhap -> 600 cua hang van muot tren iPhone.
+
+// Doi chuoi gia "50.976" / "50,976 d" -> 50976. KHONG dung _num() vi dau "." o VN la phan cach nghin.
+function _giaNum(x){ return Number(String(x == null ? '' : x).replace(/[^0-9]/g, '')) || 0; }
+function _khgKey(store, sp){ return _normStore(store) + '||' + _normStore(sp); }
+
+function _openTab7(){ if(!state.khgData) loadKhGia(); }
+
+function loadKhGia(){
+  var url = getUrl(), token = misaToken();
+  var el = document.getElementById('khgWrap');
+  if(!el) return;
+  if(!url || !token){ el.innerHTML = '<div class="card empty">Chưa có URL/Token — bấm ⚙ Cấu hình.</div>'; return; }
+  el.innerHTML = '<div class="card empty">Đang tải danh sách cửa hàng và bảng giá...</div>';
+  jsonpGet({ action:'docKhachHangGia', token:token }, function(d){
+    if(!d || !d.ok){
+      el.innerHTML = '<div class="card empty">' + esc((d && d.msg) || 'Không đọc được dữ liệu — đã dán Code.gs mới (có action docKhachHangGia) và Triển khai phiên bản mới chưa?') + '</div>';
+      return;
+    }
+    state.khgData = d;
+    state.khgMa = {};
+    state.khgGia = {};
+    renderKhGiaFull();
+  }, url);
+}
+
+function renderKhGiaFull(){
+  var el = document.getElementById('khgWrap');
+  var d = state.khgData;
+  if(!el || !d) return;
+  var ch = d.ch || [];
+  var sp = d.spInfo || (d.spTen || []).map(function(t){ return { ten:t, dvt:'' }; });
+  if(!ch.length){ el.innerHTML = '<div class="card empty">Tab DanhMucSieuThi chưa có cửa hàng nào.</div>'; return; }
+
+  var html = '<div class="card">';
+  html += '<div class="row" style="margin-bottom:8px">'
+    + '<input type="text" id="khgSearch" placeholder="Tìm cửa hàng..." value="' + escAttr(state.khgSearchVal || '') + '" style="min-width:220px">'
+    + '<label class="muted" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="khgChuaMa"> Chỉ hiện cửa hàng chưa có mã KH</label>'
+    + '<label class="muted" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="khgAnSp" checked> Ẩn sản phẩm chưa cửa hàng nào có giá</label>'
+    + '<span class="muted" id="khgDem" style="margin-left:auto"></span>'
+    + '</div>';
+  html += '<div class="khgbox"><table class="khg"><thead><tr>'
+    + '<th class="k1">Cửa hàng</th><th class="k2">Mã khách hàng</th>';
+  sp.forEach(function(e, ci){
+    html += '<th class="num" data-c="' + ci + '">' + esc(e.ten) + (e.dvt ? '<br><span style="font-weight:400;text-transform:none">' + esc(e.dvt) + '</span>' : '') + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  ch.forEach(function(rec, ri){
+    html += '<tr data-ri="' + ri + '" data-store="' + escAttr(rec.store) + '" data-norm="' + escAttr(_normStore(rec.store)) + '">'
+      + '<td class="k1" title="' + escAttr(rec.store) + '">' + esc(rec.store) + '</td>'
+      + '<td class="k2"><input class="kma" data-store="' + escAttr(rec.store) + '" value="' + escAttr(rec.maKH || '') + '" placeholder="—"></td>';
+    sp.forEach(function(e, ci){
+      var g = _khgGiaHienTai(rec.store, e.ten);
+      html += '<td class="g num" data-c="' + ci + '" data-sp="' + escAttr(e.ten) + '">' + (g > 0 ? fmt(g) : '') + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="row" style="margin-top:10px">'
+    + '<button class="btn" id="btnKhgLuu">💾 Lưu lên Sheet</button>'
+    + '<button class="btn ghost sm" id="btnKhgTai">↻ Tải lại</button>'
+    + '<span class="muted" id="khgMsg" style="margin-left:8px"></span></div>';
+  html += '<div class="muted" style="margin-top:8px">Bấm vào ô giá để sửa. Đơn giá tính theo <b>đơn vị MISA</b> (ĐVT ghi dưới tên sản phẩm) — cùng đơn vị với cột "Đơn giá" trong file đẩy MISA. Ô nền vàng là ô đã sửa, chưa lưu.</div>';
+  html += '</div>';
+  el.innerHTML = html;
+
+  // Gan su kien bang DOM closure (khong dung chuoi onclick inline)
+  var s = document.getElementById('khgSearch');
+  if(s) s.addEventListener('input', khgLocApply);
+  var c1 = document.getElementById('khgChuaMa');
+  if(c1) c1.addEventListener('change', khgLocApply);
+  var c2 = document.getElementById('khgAnSp');
+  if(c2) c2.addEventListener('change', khgAnCotApply);
+  var bL = document.getElementById('btnKhgLuu');
+  if(bL) bL.addEventListener('click', luuKhGia);
+  var bT = document.getElementById('btnKhgTai');
+  if(bT) bT.addEventListener('click', function(){
+    if(_khgCoSua() && !confirm('Còn chỉnh sửa chưa lưu — tải lại sẽ mất. Tiếp tục?')) return;
+    state.khgData = null; loadKhGia();
+  });
+  el.addEventListener('click', khgClickCell);
+  el.addEventListener('input', khgInputMa);
+
+  khgAnCotApply();
+  khgLocApply();
+}
+
+// Gia dang hien cho 1 o: uu tien ban sua chua luu, sau do moi den ban tren Sheet.
+function _khgGiaHienTai(store, spTen){
+  var k = _khgKey(store, spTen);
+  if(state.khgGia && Object.prototype.hasOwnProperty.call(state.khgGia, k)) return state.khgGia[k].gia;
+  var g = state.khgData && state.khgData.gia ? state.khgData.gia[k] : 0;
+  return Number(g) || 0;
+}
+function _khgCoSua(){
+  var n = 0, k;
+  for(k in state.khgMa){ if(Object.prototype.hasOwnProperty.call(state.khgMa, k)) n++; }
+  for(k in state.khgGia){ if(Object.prototype.hasOwnProperty.call(state.khgGia, k)) n++; }
+  return n;
+}
+
+// Bam vao 1 o gia -> bien thanh o nhap; roi khoi o (blur/Enter) -> ghi vao state va ve lai dang chu.
+function khgClickCell(e){
+  var td = e.target && e.target.closest ? e.target.closest('td.g') : null;
+  if(!td || td.querySelector('input')) return;
+  var tr = td.closest('tr');
+  var store = tr.getAttribute('data-store');
+  var spTen = td.getAttribute('data-sp');
+  var cu = _khgGiaHienTai(store, spTen);
+  var inp = document.createElement('input');
+  inp.className = 'gi num';
+  inp.value = cu > 0 ? String(cu) : '';
+  inp.setAttribute('inputmode', 'numeric');
+  td.textContent = '';
+  td.appendChild(inp);
+  inp.focus();
+  inp.select();
+  function chot(){
+    var moi = _giaNum(inp.value);
+    var goc = Number((state.khgData.gia || {})[_khgKey(store, spTen)]) || 0;
+    if(moi === goc) delete state.khgGia[_khgKey(store, spTen)];
+    else state.khgGia[_khgKey(store, spTen)] = { store:store, sp:spTen, gia:moi };
+    td.textContent = moi > 0 ? fmt(moi) : '';
+    if(moi === goc) td.classList.remove('dirty'); else td.classList.add('dirty');
+    khgDemApply();
+  }
+  inp.addEventListener('blur', chot);
+  inp.addEventListener('keydown', function(ev){
+    if(ev.key === 'Enter'){ ev.preventDefault(); inp.blur(); }
+    if(ev.key === 'Escape'){ inp.value = cu > 0 ? String(cu) : ''; inp.blur(); }
+  });
+}
+
+// Go vao o Ma khach hang -> ghi nhan sua doi (so voi ban goc tren Sheet).
+function khgInputMa(e){
+  var inp = e.target;
+  if(!inp || !inp.classList || !inp.classList.contains('kma')) return;
+  var tr = inp.closest('tr');
+  var ri = Number(tr.getAttribute('data-ri'));
+  var goc = String((state.khgData.ch[ri] || {}).maKH || '').trim();
+  var moi = String(inp.value || '').trim();
+  var store = inp.getAttribute('data-store');
+  if(moi === goc){ delete state.khgMa[store]; inp.classList.remove('dirty'); }
+  else { state.khgMa[store] = moi; inp.classList.add('dirty'); }
+  khgDemApply();
+}
+
+// Loc NHE bang display:none — khong ve lai bang nen khong mat focus khi go tim.
+function khgLocApply(){
+  var s = document.getElementById('khgSearch');
+  var q = _normStore(s ? s.value : '');
+  state.khgSearchVal = s ? s.value : '';
+  var chiChuaMa = document.getElementById('khgChuaMa');
+  var loc2 = !!(chiChuaMa && chiChuaMa.checked);
+  document.querySelectorAll('#khgWrap tr[data-ri]').forEach(function(tr){
+    var ok = !q || tr.getAttribute('data-norm').indexOf(q) >= 0;
+    if(ok && loc2){
+      var inp = tr.querySelector('input.kma');
+      if(inp && String(inp.value || '').trim()) ok = false;
+    }
+    tr.style.display = ok ? '' : 'none';
+  });
+  khgDemApply();
+}
+function khgDemApply(){
+  var el = document.getElementById('khgDem');
+  if(!el) return;
+  var hien = 0, chuaMa = 0;
+  document.querySelectorAll('#khgWrap tr[data-ri]').forEach(function(tr){
+    if(tr.style.display !== 'none') hien++;
+    var inp = tr.querySelector('input.kma');
+    if(inp && !String(inp.value || '').trim()) chuaMa++;
+  });
+  var nSua = _khgCoSua();
+  el.textContent = hien + '/' + (state.khgData.ch || []).length + ' cửa hàng · ' + chuaMa + ' chưa có mã'
+    + (nSua ? ' · ' + nSua + ' ô đã sửa' : '');
+}
+// An bot cot san pham khong cua hang nao co gia — cho bang do rong khi keo ngang.
+function khgAnCotApply(){
+  var cb = document.getElementById('khgAnSp');
+  var an = !!(cb && cb.checked);
+  var sp = state.khgData.spInfo || [];
+  var coGia = {};
+  if(an){
+    document.querySelectorAll('#khgWrap td.g').forEach(function(td){
+      if(td.textContent && td.textContent.trim()) coGia[td.getAttribute('data-c')] = 1;
+    });
+  }
+  sp.forEach(function(e, ci){
+    var hide = an && !coGia[String(ci)];
+    document.querySelectorAll('#khgWrap [data-c="' + ci + '"]').forEach(function(cell){
+      cell.style.display = hide ? 'none' : '';
+    });
+  });
+}
+
+function luuKhGia(){
+  var url = getUrl(), token = misaToken();
+  var msgEl = document.getElementById('khgMsg');
+  if(!url || !token){ toast('Chưa cấu hình URL/Token', 'bad'); return; }
+  var maEdits = [], giaEdits = [], k;
+  for(k in state.khgMa){ if(Object.prototype.hasOwnProperty.call(state.khgMa, k)) maEdits.push({ store:k, ma:state.khgMa[k] }); }
+  for(k in state.khgGia){ if(Object.prototype.hasOwnProperty.call(state.khgGia, k)) giaEdits.push(state.khgGia[k]); }
+  if(!maEdits.length && !giaEdits.length){ toast('Chưa sửa ô nào', 'bad'); return; }
+  if(!confirm('Ghi lên Sheet: ' + maEdits.length + ' mã khách hàng, ' + giaEdits.length + ' dòng giá.\nTiếp tục?')) return;
+  if(msgEl) msgEl.textContent = 'Đang lưu...';
+  postToUrl(url, { token:token, action:'ghiKhachHangGia', maEdits:maEdits, giaEdits:giaEdits }, function(){
+    if(msgEl) msgEl.textContent = 'Đã gửi lệnh ghi lúc ' + new Date().toLocaleTimeString('vi-VN') + ' — đang tải lại để đối chiếu...';
+    toast('Đã lưu — đang tải lại', 'ok');
+    setTimeout(function(){ state.khgData = null; loadKhGia(); }, 2500);
+  }, function(){
+    if(msgEl) msgEl.textContent = 'Lỗi khi lưu — kiểm tra kết nối rồi bấm Lưu lại.';
+    toast('Lỗi khi lưu', 'bad');
+  });
+}
+// ===================== TAB 8: BẢNG MÃ SẢN PHẨM =====================
+// Ghi DE toan bo tab DanhMucSanPham tren Sheet (chi ~22 dong nen ghi de cho phep xoa dong).
+var COT_SP = ['tenApp','tenKhac','ma','tenMisa','dvt','heso','kho','tkKho','tkDT','tkGV'];
+var NHAN_SP = { tenApp:'Tên sản phẩm (trên vận đơn)', tenKhac:'Tên khác (cách nhau dấu ;)', ma:'Mã MISA',
+  tenMisa:'Tên hàng trên MISA', dvt:'ĐVT', heso:'Hệ số', kho:'Kho', tkKho:'TK kho', tkDT:'TK doanh thu', tkGV:'TK giá vốn' };
+var RONG_SP = { tenApp:170, tenKhac:170, ma:90, tenMisa:200, dvt:70, heso:60, kho:70, tkKho:70, tkDT:80, tkGV:80 };
+
+function _openTab8(){ if(!state.spData) loadSanPham(); }
+
+function loadSanPham(){
+  var url = getUrl(), token = misaToken();
+  var el = document.getElementById('spWrap');
+  if(!el) return;
+  if(!url || !token){ el.innerHTML = '<div class="card empty">Chưa có URL/Token — bấm ⚙ Cấu hình.</div>'; return; }
+  el.innerHTML = '<div class="card empty">Đang tải bảng mã sản phẩm...</div>';
+  jsonpGet({ action:'docSanPham', token:token }, function(d){
+    if(!d || !d.ok){
+      el.innerHTML = '<div class="card empty">' + esc((d && d.msg) || 'Không đọc được — đã dán Code.gs mới (có action docSanPham) và Triển khai phiên bản mới chưa?') + '</div>';
+      return;
+    }
+    state.spData = d.sp || [];
+    renderSanPhamFull();
+  }, url);
+}
+
+function renderSanPhamFull(){
+  var el = document.getElementById('spWrap');
+  if(!el || !state.spData) return;
+  var html = '<div class="card">';
+  html += '<div class="row" style="margin-bottom:8px">'
+    + '<button class="btn sm" id="btnSpThem">+ Thêm sản phẩm</button>'
+    + '<button class="btn ghost sm" id="btnSpTai">↻ Tải lại</button>'
+    + '<span class="muted" style="margin-left:auto">' + state.spData.length + ' sản phẩm</span></div>';
+  html += '<div style="overflow-x:auto"><table><thead><tr><th>Xóa</th>';
+  COT_SP.forEach(function(c){ html += '<th>' + esc(NHAN_SP[c] || c) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  state.spData.forEach(function(rec, idx){
+    html += '<tr data-si="' + idx + '">'
+      + '<td><button type="button" class="btn btn-spxoa" data-si="' + idx + '" style="padding:4px 8px;font-size:12px;background:#c0392b">🗑️</button></td>';
+    COT_SP.forEach(function(c){
+      var isNum = (c === 'heso' || c === 'tkKho' || c === 'tkDT' || c === 'tkGV');
+      html += oInput(c, rec[c] == null ? '' : rec[c], RONG_SP[c] || 100, isNum);
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="row" style="margin-top:10px"><button class="btn" id="btnSpLuu">💾 Lưu lên Sheet</button>'
+    + '<span class="muted" id="spMsg" style="margin-left:8px"></span></div>';
+  html += '</div>';
+  el.innerHTML = html;
+
+  var b1 = document.getElementById('btnSpThem');
+  if(b1) b1.addEventListener('click', themSanPhamMoi);
+  var b2 = document.getElementById('btnSpTai');
+  if(b2) b2.addEventListener('click', function(){ state.spData = null; loadSanPham(); });
+  var b3 = document.getElementById('btnSpLuu');
+  if(b3) b3.addEventListener('click', luuSanPham);
+  el.querySelectorAll('.btn-spxoa').forEach(function(b){
+    b.addEventListener('click', function(){ xoaSanPhamRow(Number(b.getAttribute('data-si'))); });
+  });
+}
+
+function themSanPhamMoi(){
+  if(!state.spData) state.spData = [];
+  var rec = {};
+  COT_SP.forEach(function(c){ rec[c] = ''; });
+  rec.tenApp = '(Sản phẩm mới)';
+  rec.heso = 1;
+  state.spData.unshift(rec);
+  renderSanPhamFull();
+  toast('Đã thêm 1 dòng — điền thông tin rồi bấm Lưu', 'ok');
+}
+function xoaSanPhamRow(idx){
+  if(!state.spData || !state.spData[idx]) return;
+  var ten = state.spData[idx].tenApp || state.spData[idx].tenMisa || '(chưa đặt tên)';
+  if(!confirm('Xóa "' + ten + '" khỏi bảng mã?\n(Chỉ có hiệu lực thật sau khi bấm "Lưu lên Sheet")')) return;
+  state.spData.splice(idx, 1);
+  renderSanPhamFull();
+  toast('Đã xóa "' + ten + '" khỏi bảng — nhớ bấm Lưu', 'ok');
+}
+
+function luuSanPham(){
+  var url = getUrl(), token = misaToken();
+  var msgEl = document.getElementById('spMsg');
+  if(!url || !token){ toast('Chưa cấu hình URL/Token', 'bad'); return; }
+  if(!state.spData || !state.spData.length){ toast('Chưa có dữ liệu', 'bad'); return; }
+  document.querySelectorAll('#spWrap tr[data-si]').forEach(function(tr){
+    var idx = Number(tr.getAttribute('data-si'));
+    var rec = state.spData[idx];
+    if(!rec) return;
+    COT_SP.forEach(function(c){
+      var inp = tr.querySelector('input[data-f="' + c + '"]');
+      if(inp) rec[c] = inp.value;
+    });
+  });
+  var rows = state.spData.filter(function(r){
+    return String(r.tenApp || '').trim() || String(r.ma || '').trim();
+  });
+  if(!rows.length){ toast('Không có dòng hợp lệ', 'bad'); return; }
+  if(!confirm('Ghi đè toàn bộ bảng mã trên Sheet bằng ' + rows.length + ' sản phẩm đang hiển thị?\n\nLƯU Ý: bảng này CHỈ dùng cho app. File bang-ma-san-pham.json trên máy văn phòng vẫn là nguồn cho 4 kênh đẩy MISA — sửa mã ở đây thì nhớ sửa cùng ở file đó rồi chạy sync-ma.py.')) return;
+  if(msgEl) msgEl.textContent = 'Đang lưu...';
+  postToUrl(url, { token:token, action:'ghiSanPham', rows:rows }, function(){
+    if(msgEl) msgEl.textContent = 'Đã gửi lệnh ghi ' + rows.length + ' sản phẩm lúc ' + new Date().toLocaleTimeString('vi-VN') + '. Nhớ đồng bộ bang-ma-san-pham.json trên máy văn phòng.';
+    toast('Đã lưu bảng mã', 'ok');
+    SPMAP = null; NVMAP = null; GIAMAP = null;   // buoc tab 4 nap lai bang ma moi
+  }, function(){
+    if(msgEl) msgEl.textContent = 'Lỗi khi lưu — kiểm tra kết nối rồi bấm Lưu lại.';
+    toast('Lỗi khi lưu', 'bad');
+  });
 }
 
 // ===================== PIN =====================
