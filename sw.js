@@ -1,4 +1,5 @@
 // sw.js — service worker cho PWA "Kế toán HN".
+// v25 (04/08/2026): v5.9-tangtoc — timeout 90s, tu thu lai khi 503, doiChieu tuan tu, dem giay cho. Bump cache.
 // v24 (29/07/2026): tab 8 co nut "Keo danh muc chuan ve" - doi chieu 3 noi voi DanhMucSieuThi. Bump cache.
 // v23 (29/07/2026): tab 9 doc/ghi Sheet theo TEN TIEU DE cot (sua loi lech cot). Bump cache.
 // v22 (29/07/2026): them nut Soat ten cua hang o tab 8. Bump cache de may cu xoa ban cu.
@@ -6,7 +7,7 @@
 // v20 (29/07/2026): them tab 8 (Ma KH & Gia) + tab 9 (Ma san pham). Bump cache de may cu xoa ban cu.
 // v19 (20/07/2026): index.html chuyen sang NETWORK-FIRST de cac may tu nhan ban moi khi anh Toan cap nhat
 // (GitHub Pages khong dung duoc file _headers chong cache nhu Cloudflare). File tinh khac giu cache-first.
-var CACHE = 'ketoan-hn-v24';
+var CACHE = 'ketoan-hn-v25';
 var SHELL = ['./index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', function(e){

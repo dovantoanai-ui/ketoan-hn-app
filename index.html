@@ -407,7 +407,7 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
 
 <script>
 // ===================== TIỆN ÍCH =====================
-var APP_VERSION = 'v5.8-keodanhmuc'; // 29/07/2026: muc 8 co nut Keo danh muc chuan ve - doi chieu 3 noi roi ghi theo tung o
+var APP_VERSION = 'v5.9-tangtoc'; // 04/08/2026: timeout 30s->90s + tu thu lai khi 503 + doiChieu-thongKe chay tuan tu + dem giay cho (sheet to lam backend cham)
 
 // URL Apps Script doi chieu/quy nhung san — de app mo len la chay, khong phai dan tay.
 // Anh Toan dan URL /exec vao trong dau nhay ben duoi (giu nguyen dau nhay). De trong '' = app ve che do cau hinh tay nhu cu.
@@ -510,7 +510,19 @@ function buildChips(containerId, withAll, onPick, current){
 }
 
 // ===================== GỌI BACKEND (JSONP cho đọc) =====================
+// v5.9 (04/08/2026): boc them 1 lop TU THU LAI — Apps Script thi thoang tra 503 khi 2 request
+// nang chay cung luc hoac Google qua tai; thu lai 1 lan sau 2 giay la thuong qua duoc.
 function jsonpGet(params, cb, urlOverride){
+  _jsonpGoi(params, function(data){
+    if(data === null && !params._daThuLai){
+      params._daThuLai = 1;
+      setTimeout(function(){ _jsonpGoi(params, cb, urlOverride); }, 2000);
+      return;
+    }
+    cb(data);
+  }, urlOverride);
+}
+function _jsonpGoi(params, cb, urlOverride){
   var url = urlOverride || getUrl();
   if(!url){ cb(null); return; }
   // Chi gan PIN cho request toi URL doi chieu/quy (main). Request toi project xuat hoa don (hdUrl) khong gan.
@@ -525,7 +537,7 @@ function jsonpGet(params, cb, urlOverride){
   s.onerror = function(){ if(!done){ cleanup(); cb(null); } };
   s.src = url + '?' + qs;
   document.body.appendChild(s);
-  setTimeout(function(){ if(!done){ cleanup(); cb(null); } }, 30000); // 10/07/2026: tang tu 15s -> 30s, Apps Script cold-start co luc cham hon 15s -> bao nham "Khong ket noi duoc"
+  setTimeout(function(){ if(!done){ cleanup(); cb(null); } }, 90000); // v5.9 (04/08/2026): 30s -> 90s. Sheet da phinh to, doiChieu mua cao diem mat 30-40s; cat o 30s lam app tuong "khong keo duoc du lieu"
 }
 function postSheet(payload, onOk, onErr){
   postToUrl(getUrl(), payload, onOk, onErr);
@@ -564,11 +576,22 @@ function loadThongKe(){
 function loadDoiChieu(){
   var ngay = document.getElementById('d1').value || todayStr();
   var nv = state.nv1 || 'Tất cả';
-  loadThongKe();  // bảng thống kê HĐ theo NV (không phụ thuộc chọn ai)
+  // v5.9: KHONG goi loadThongKe() song song nua — 2 request nang cung luc de bi Google 503.
+  // doiChieu xong moi goi thongKe (xem trong callback ben duoi).
   document.getElementById('btnLoad').disabled = true;
-  document.getElementById('dcBody').innerHTML = '<div class="card empty">Đang lấy số...</div>';
+  // Dem giay cho — de biet app van song, khong phai treo (backend sheet to co the mat 30-40s)
+  var t0 = Date.now();
+  document.getElementById('dcBody').innerHTML = '<div class="card empty" id="dcCho">Đang lấy số... 0s</div>';
+  var nhipCho = setInterval(function(){
+    var el = document.getElementById('dcCho');
+    if(!el){ clearInterval(nhipCho); return; }
+    var giay = Math.round((Date.now() - t0) / 1000);
+    el.textContent = 'Đang lấy số... ' + giay + 's' + (giay >= 30 ? ' — dữ liệu tháng đã lớn, app vẫn đang chạy, anh chờ chút' : '');
+  }, 1000);
   jsonpGet({ action:'doiChieu', ngay: ngay, nv: nv }, function(data){
+    clearInterval(nhipCho);
     document.getElementById('btnLoad').disabled = false;
+    loadThongKe();  // v5.9: bang thong ke HD theo NV — goi TUAN TU sau khi doiChieu xong
     if(!data){ data = demoDoiChieu(ngay, nv); state.dc = data; renderDoiChieu(data, ngay, nv); return; }
     if(!data.ok){ document.getElementById('dcBody').innerHTML = '<div class="card empty">' + (data.msg||'Không có dữ liệu') + '</div>'; return; }
 
