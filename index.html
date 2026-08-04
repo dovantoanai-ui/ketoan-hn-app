@@ -407,7 +407,7 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
 
 <script>
 // ===================== TIỆN ÍCH =====================
-var APP_VERSION = 'v5.9.1-makh'; // 04/08/2026: (1) tangtoc timeout 90s + retry 503 + tuan tu; (2) muc 4: mapCH loi -> CHAN va bao do, khong xuat Excel thieu Ma KH nua
+var APP_VERSION = 'v5.9.3-spfresh'; // 04/08/2026: (1) tangtoc 90s+retry; (2) chan thieu Ma KH; (3) canh bao bang ma SP thieu truong; (4) lam moi bang ma SP moi lan Tao Excel (khong dung ban cu trong bo nho nua)
 
 // URL Apps Script doi chieu/quy nhung san — de app mo len la chay, khong phai dan tay.
 // Anh Toan dan URL /exec vao trong dau nhay ben duoi (giu nguyen dau nhay). De trong '' = app ve che do cau hinh tay nhu cu.
@@ -1485,6 +1485,10 @@ function taoExcelMisa(){
   if(!SOAT || !SOAT.ngay){ toast('Tải hóa đơn đã','bad'); return; }
   // v5.9.1: chot chan cuoi — bang ma cua hang chua tai duoc thi khong cho xuat file thieu Ma KH
   if(!SOAT.mapOk){ toast('Bảng mã cửa hàng chưa tải được','bad'); setMisaMsg('⛔ Bảng mã cửa hàng chưa tải được — file sẽ trống Mã KH. Bấm "Tải hóa đơn" lại rồi mới tạo Excel.'); return; }
+  // v5.9.3: LUON lam moi bang ma SP truoc khi tao file (them ~3 giay) — truoc day bang ma
+  // chi tai 1 lan/phien va giu trong bo nho, app mo san tu truoc se dung bang ma CU du
+  // backend da cap nhat (vu 04/08: sua backend xong ma file van thieu vi tab mo san).
+  SPMAP=null; NVMAP=null; GIAMAP=null;
   var ids=[]; document.querySelectorAll('.soat-chk').forEach(function(c){ if(c.checked) ids.push(c.getAttribute('data-inv')); });
   if(!ids.length){ toast('Chưa tick phiếu nào','bad'); return; }
   var startNo=parseInt(document.getElementById('misaStartNo').value,10); if(!(startNo>=1)) startNo=1;
@@ -1507,6 +1511,9 @@ function _buildExcel(ids, startNo){
     (v.lines||[]).forEach(function(l){
       var e=SPMAP[_normStore(l.sp||'')];
       if(!e){ warns.push(inv+' ('+v.store+'): SP "'+l.sp+'" chưa có mã MISA — bỏ dòng'); return; }
+      // v5.9.2: bang ma SP (tab DanhMucSanPham) thieu truong nao -> canh bao ro, khong de file thieu trong im lang
+      var tt9=[]; if(!e.ma)tt9.push('Mã'); if(!e.tenMisa)tt9.push('Tên MISA'); if(!e.dvt)tt9.push('ĐVT'); if(!e.kho)tt9.push('Kho'); if(!e.tkDT)tt9.push('TK DT'); if(!e.tkGV)tt9.push('TK GV'); if(!e.tkKho)tt9.push('TK kho');
+      if(tt9.length) warns.push(inv+' ('+v.store+'): SP "'+l.sp+'" bảng mã thiếu '+tt9.join(', ')+' — file sẽ trống các ô này, bổ sung ở tab 9 (Mã sản phẩm)');
       var heso=Number(e.heso)||1; var sl=_num(l.sl)*heso; var tt=_num(l.tien);
       if(sl<=0){ warns.push(inv+' ('+v.store+'): "'+l.sp+'" SL/hệ số = 0 — bỏ dòng'); return; }
       // Bang gia (tab 8) chi DIEN BU khi hoa don khong co tien; neu ca hai deu co thi chi CANH BAO, khong tu sua tien.
