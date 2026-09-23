@@ -100,6 +100,13 @@ input.ci[disabled]{background:#f2f2f2;color:#999;cursor:not-allowed}
 .spcot b{color:#333}
 .spcot .xau{color:#c0392b;font-weight:600}
 table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border-radius:5px;padding:2px 5px;font-size:12px;text-align:right}
+/* --- Tab 10: Dem tien cuoi ngay --- */
+#pane9 input.dtcn-soto{padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:16px;text-align:right;max-width:130px;background:#fff}
+#pane9 .dtcn-sub{margin-top:10px;padding-top:10px;border-top:2px solid #fff3ea;text-align:right;font-size:15px;color:var(--mut)}
+#pane9 .dtcn-sub b{color:#e8732c;font-size:22px;font-weight:800}
+#dtcnFx{width:100%;min-height:130px;padding:12px;border:1px solid var(--line);border-radius:10px;font-family:Consolas,monospace;font-size:18px;line-height:1.7;resize:vertical;background:#fbfffc}
+#dtcnFxTbl td.err{color:#c0392b;font-weight:600}
+#dtcnFxTbl td:first-child{font-family:Consolas,monospace}
 </style>
 </head>
 <body>
@@ -126,6 +133,7 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
   <button onclick="go(6,this); nkOpen();">7 · Nhắc nhập kho</button>
   <button onclick="go(7,this); _openTab7();">8 · Mã KH &amp; Giá</button>
   <button onclick="go(8,this); _openTab8();">9 · Mã sản phẩm</button>
+  <button onclick="go(9,this); dtcnOpen();">10 · Đếm tiền</button>
 </div>
 
 <main>
@@ -232,10 +240,10 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
   <section class="pane" id="pane4">
     <div class="card">
       <h3>🏬 Quản lý cửa hàng</h3>
-      <div class="muted" style="margin-bottom:10px">Sửa Tên đơn vị / MST / Địa chỉ ngay trên bảng bên dưới, bấm "💾 Lưu chỉnh sửa" để ghi vào Sheet. Khi cần áp dụng cho máy văn phòng (dùng để xuất hóa đơn), bấm "📤 Xuất file cho máy văn phòng" — máy sẽ tự ghi đè file master, không cần restart watcher.</div>
+      <div class="muted" style="margin-bottom:10px">Danh bạ cửa hàng dùng để xuất hóa đơn nằm ở <b>Sheet MasterCuaHang</b>. Sửa ở đâu cũng được: <b>ngay trên bảng dưới đây</b> (sửa ô → dòng tô vàng → bấm 💾 Lưu) hoặc <b>sửa thẳng trên Sheet</b> rồi bấm 🔄 Đồng bộ để xem lại. Lưu xong là có hiệu lực — lần <b>kéo hóa đơn</b> kế tiếp tự dùng thông tin mới, không cần bấm gì thêm.</div>
       <div class="row">
-        <button class="btn ghost" id="btnMcNap" onclick="ghiLenhMC('nap_master')">📥 Nạp dữ liệu từ máy văn phòng (chạy 1 lần đầu)</button>
-        <button class="btn" id="btnMcXuat" onclick="ghiLenhMC('xuat_master')">📤 Xuất file cho máy văn phòng</button>
+        <button class="btn" id="btnMcSheet" type="button">📝 Mở Sheet để sửa trực tiếp</button>
+        <button class="btn ghost" id="btnMcDongBo" type="button">🔄 Đồng bộ từ Sheet</button>
       </div>
       <div class="muted" id="mcMsg" style="margin-top:10px"></div>
     </div>
@@ -342,6 +350,40 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
     <div id="spWrap"><div class="card empty">Đang chờ tải...</div></div>
   </section>
 
+  <!-- ===== TAB 10: DEM TIEN CUOI NGAY (port tu dem-tien-cuoi-ngay.html, key localStorage giu nguyen dtcn_*) ===== -->
+  <section class="pane" id="pane9">
+    <div class="card" style="padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <b>🧮 Đếm tiền cuối ngày</b>
+      <span class="muted">Kho Hà Nội — lưu theo ngày trên máy này</span>
+      <span style="margin-left:auto">Ngày <input type="date" id="dtcnNgay"></span>
+    </div>
+
+    <div class="card">
+      <h3>1 · Đếm theo mệnh giá</h3>
+      <table id="dtcnMgTbl">
+        <thead><tr><th class="num">Mệnh giá</th><th>Số tờ</th><th class="num">Thành tiền</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="dtcn-sub">Cộng mệnh giá: <b id="dtcnMgSub">0</b> đ</div>
+    </div>
+
+    <div class="card">
+      <h3>2 · Tính nhanh — viết công thức như Excel</h3>
+      <div class="muted" style="margin-bottom:8px">Mỗi dòng một phép tính (dùng <b>+ − * /</b> và ngoặc). VD: <code>600*50000+23000</code>. Kết quả từng dòng + tổng hiện bên dưới.</div>
+      <textarea id="dtcnFx" placeholder="600*50000+23000&#10;120*29000&#10;(50000+20000)*3"></textarea>
+      <table id="dtcnFxTbl" style="margin-top:10px">
+        <thead><tr><th>Công thức</th><th class="num">= Kết quả</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="muted" id="dtcnFxEmpty" style="padding:8px 0">Gõ công thức vào ô trên để tính.</div>
+      <div class="dtcn-sub">Kết quả phần này: <b id="dtcnFxSub">0</b> đ</div>
+    </div>
+
+    <div style="text-align:center;margin-top:6px">
+      <button class="btn ghost" style="color:#c0392b;border-color:#c0392b" onclick="dtcnReset()">Xóa hết ngày này</button>
+      <div class="muted" style="margin-top:8px">Mỗi phần có kết quả riêng. Dữ liệu lưu theo từng ngày trên máy — đóng mở lại vẫn còn.</div>
+    </div>
+  </section>
 </main>
 
 <!-- Cấu hình -->
@@ -407,11 +449,13 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
 
 <script>
 // ===================== TIỆN ÍCH =====================
-var APP_VERSION = 'v5.9.3-spfresh'; // 04/08/2026: (1) tangtoc 90s+retry; (2) chan thieu Ma KH; (3) canh bao bang ma SP thieu truong; (4) lam moi bang ma SP moi lan Tao Excel (khong dung ban cu trong bo nho nua)
+var APP_VERSION = 'v6.0-danhba'; // 23/09/2026: GOP 2 nhanh — v5.9.3-spfresh (GitHub 04/08: tab Ma KH & Gia, Ma SP, tangtoc) + v5.4-nhapkho (may 05/08: danh ba 1.181 CH) + tab 10 Dem tien + DEFAULT_HD_URL + danh ba cua hang v3 (luu tung dong, Dong bo/Mo Sheet, Luu danh ba tab 3)
 
 // URL Apps Script doi chieu/quy nhung san — de app mo len la chay, khong phai dan tay.
 // Anh Toan dan URL /exec vao trong dau nhay ben duoi (giu nguyen dau nhay). De trong '' = app ve che do cau hinh tay nhu cu.
 var DEFAULT_GS_URL = 'https://script.google.com/macros/s/AKfycbzJjHQVkJoADn3kHXHEYCst9o44hX1HMyGBpAQaBzVWRL26BgpQ_eWpbWU_14DgyxPz_w/exec';
+// 07/09/2026: URL xuat hoa don (API-XuatHoaDon-NemThanh) gan san de may nao mo cung co — TOKEN van nhap 1 lan/may o Cau hinh (khong gan vao code vi source nam public).
+var DEFAULT_HD_URL = 'https://script.google.com/macros/s/AKfycbzTJSi3oVxX1Wov96rDxS8Y6y-K27lpyGEgTTdnUQJkgauoTvnVG8VdpeSYW6D6kXyd/exec';
 // URL + token cho Apps Script GUI MAIL nhac nhap kho (dat duoi hom nemthanh.dondathang).
 // De trong -> anh Toan dan qua man Cau hinh. Token phai trung voi CFG.TOKEN ben Code.gs mail.
 // KHONG nhung token vao day: file index.html duoc publish CONG KHAI tren GitHub Pages.
@@ -452,7 +496,7 @@ function getNvList(){
   return raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
 }
 function getDev(){ return localStorage.getItem(LS.dev) || 'may-ketoan-hn'; }
-function getHdUrl(){ return localStorage.getItem(LS.hdUrl) || ''; }
+function getHdUrl(){ return localStorage.getItem(LS.hdUrl) || DEFAULT_HD_URL || ''; }
 function getMailUrl(){ return localStorage.getItem(LS.mailUrl) || DEFAULT_MAIL_URL || ''; }
 function getMailToken(){ return localStorage.getItem(LS.mailToken) || DEFAULT_MAIL_TOKEN || ''; }
 function getHdToken(){ return localStorage.getItem(LS.hdToken) || ''; }
@@ -960,7 +1004,7 @@ function ghiLenhHD(action){
   var url = getHdUrl(), token = getHdToken();
   var msgEl = document.getElementById('hdMsg');
   var b1 = document.getElementById('btnHd1'), b2 = document.getElementById('btnHd2');
-  if(!url || !token){ toast('Chưa cấu hình URL/Token xuất hóa đơn (bấm ⚙ Cấu hình)', 'bad'); return; }
+  if(!url || !token){ toast('Chưa nhập token xuất hóa đơn trên máy này (bấm ⚙ Cấu hình)', 'bad'); return; }
   b1.disabled = true; b2.disabled = true;
   if(msgEl) msgEl.textContent = 'Đang gửi lệnh...';
   jsonpGet({ action:'ghiLenh', lenhAction: action, token: token }, function(data){
@@ -1028,6 +1072,7 @@ function renderChieuTable(data){
   if(!data || data.error){ el.innerHTML = '<div class="card empty">' + esc((data && data.error) || 'Không lấy được dữ liệu.') + '</div>'; return; }
   if(!data.rows || !data.rows.length){ el.innerHTML = '<div class="card empty">Tab CHIỀU chưa có dòng nào. Bấm 1️⃣ trước.</div>'; return; }
   state.chieuData = data; // giu lai de loc/tich lai ma khong can goi lai server
+  if(!el._danhBaGan){ el._danhBaGan = true; el.addEventListener('click', function(ev){ var b = ev.target && ev.target.closest ? ev.target.closest('.btnDanhBa') : null; if(b) luuDanhBaTuChieu(b); }); }
   var ngayKey = LS.phieuHD(data.ngay || '');
   var phieuMap = JSON.parse(localStorage.getItem(ngayKey) || '{}');
   var f = state.filterChieuPhieu || 'all';
@@ -1051,7 +1096,7 @@ function renderChieuTable(data){
     var coPhieu = !!phieuMap[r.stt];
     html += '<tr data-row="' + r.rowSheet + '" data-stt="' + esc(r.stt) + '">'
       + '<td>' + esc(r.stt) + '</td>'
-      + '<td>' + esc(r.cuaHang) + '</td>'
+      + '<td>' + esc(r.cuaHang) + '<br><button type="button" class="btn ghost btnDanhBa" data-rs="' + escAttr(r.rowSheet) + '" data-ch="' + escAttr(r.cuaHang) + '" title="Lưu Tên đơn vị / MST / Địa chỉ / Email / Người mua của dòng này vào danh bạ — hôm sau không phải sửa lại" style="padding:2px 6px;font-size:11px;margin-top:3px;white-space:nowrap">📇 Lưu danh bạ</button></td>'
       + '<td><button type="button" class="btn" style="padding:4px 8px;font-size:12px;background:#c0392b;white-space:nowrap" onclick="xoaCuaHang(\'' + esc(r.stt) + '\')">🗑️ Xóa</button></td>'
       + '<td><label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap"><input type="checkbox" ' + (coPhieu?'checked':'') + ' onchange="toggleCoPhieuChieu(\'' + esc(r.stt) + '\',this.checked)"> ' + (coPhieu?'Đã có':'Chưa có') + '</label></td>'
       + oInput('sp', r.sp, 110)
@@ -1083,7 +1128,7 @@ function renderChieuTable(data){
 // Gom gia tri dang hien trong bang (da sua hay chua) va ghi xuong tab CHIEU that.
 function luuChieuEdits(){
   var url = getHdUrl(), token = getHdToken();
-  if(!url || !token){ toast('Chưa cấu hình URL/Token xuất hóa đơn (bấm ⚙ Cấu hình)', 'bad'); return; }
+  if(!url || !token){ toast('Chưa nhập token xuất hóa đơn trên máy này (bấm ⚙ Cấu hình)', 'bad'); return; }
   var trs = document.querySelectorAll('#hdTableWrap tr[data-row]');
   if(!trs.length){ toast('Chưa có dữ liệu để lưu', 'bad'); return; }
   var rows = [];
@@ -1103,6 +1148,45 @@ function luuChieuEdits(){
   });
 }
 // Doc lai gia tri chon o o loc "Phieu giay" tren dau bang CHIEU, ve lai bang (khong goi lai server).
+// v3 (23/09/2026): lay thong tin dang hien o dong tab CHIEU (anh/ke toan vua sua) -> luu vao danh ba (MasterCuaHang)
+// CHI 5 truong hoa don; truong khac cua cua hang giu nguyen. Cua hang chua co trong danh ba -> hoi truoc khi them moi.
+function normKhoaMC(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9]+/g,' ').trim(); }
+function luuDanhBaTuChieu(btn){
+  var url = getHdUrl(), token = getHdToken();
+  if(!url || !token){ toast('Chưa nhập token xuất hóa đơn trên máy này (bấm ⚙ Cấu hình)', 'bad'); return; }
+  var tr = btn.closest('tr'), ch = btn.getAttribute('data-ch') || '';
+  if(!tr || !ch){ return; }
+  function gt(f){ var i = tr.querySelector('input[data-f="' + f + '"]'); return i ? i.value.trim() : ''; }
+  var rec = { donVi: gt('donVi'), mst: gt('mst'), diaChiPhapNhan: gt('diaChi'), email: gt('email'), nguoiMua: gt('nguoiMua') };
+  btn.disabled = true; btn.textContent = '⏳ Đang kiểm...';
+  jsonpGet({ action:'docMasterCuaHang', token: token }, function(data){
+    var ds = (data && data.master) || [], k = normKhoaMC(ch), cu = null;
+    for(var i=0;i<ds.length;i++){ if(normKhoaMC(ds[i].sieuThi || ds[i].khoa) === k){ cu = ds[i]; break; } }
+    if(!data || data.error){ btn.disabled = false; btn.textContent = '📇 Lưu danh bạ'; toast('Không đọc được danh bạ: ' + ((data && data.error) || 'lỗi kết nối'), 'bad'); return; }
+    var hoi;
+    if(cu){
+      hoi = 'Cập nhật danh bạ cho "' + ch + '":\n'
+        + '• Tên đơn vị: ' + (cu.donVi||'(trống)') + '  →  ' + (rec.donVi||'(trống)') + '\n'
+        + '• MST: ' + (cu.mst||'(trống)') + '  →  ' + (rec.mst||'(trống)') + '\n'
+        + '• Địa chỉ: ' + (cu.diaChiPhapNhan||'(trống)') + '  →  ' + (rec.diaChiPhapNhan||'(trống)') + '\n'
+        + '• Email: ' + (cu.email||'(trống)') + '  →  ' + (rec.email||'(trống)') + '\n'
+        + '• Người mua: ' + (cu.nguoiMua||'(trống)') + '  →  ' + (rec.nguoiMua||'(trống)') + '\n\nLưu?';
+    } else {
+      hoi = '"' + ch + '" CHƯA có trong danh bạ.\nThêm mới cửa hàng này với Tên đơn vị "' + (rec.donVi||'(trống)') + '", MST "' + (rec.mst||'(trống)') + '"?\n\n(Nếu đây là dòng GỘP nhiều cửa hàng thì bấm Hủy và sửa ở tab 5.)';
+    }
+    if(!confirm(hoi)){ btn.disabled = false; btn.textContent = '📇 Lưu danh bạ'; return; }
+    btn.textContent = '⏳ Đang lưu...';
+    postDocKetQua(url, { token: token, action: 'luuCuaHang', rows: [{ keyCu: cu ? (cu.sieuThi || ch) : ch, rec: rec }], may: getDev() }, function(kq){
+      btn.disabled = false;
+      if(!kq || kq.error || (kq.loi && kq.loi.length)){
+        btn.textContent = '📇 Lưu danh bạ';
+        toast('Không lưu được: ' + ((kq && kq.error) || (kq && kq.loi && kq.loi.join('; ')) || 'lỗi'), 'bad'); return;
+      }
+      btn.textContent = '✅ Đã lưu';
+      toast('Đã lưu "' + ch + '" vào danh bạ — hôm sau kéo hóa đơn tự đúng', 'ok');
+    });
+  }, url);
+}
 function applyFilterChieu(){
   var el = document.getElementById('fChieuPhieu');
   state.filterChieuPhieu = el ? el.value : 'all';
@@ -1120,7 +1204,7 @@ function toggleCoPhieuChieu(stt, checked){
 // Chi CLEAR CONTENT o Sheet (khong dich dong), nen cua hang bi xoa se bien mat khoi lan doc/day tiep theo.
 function xoaCuaHang(stt){
   var url = getHdUrl(), token = getHdToken();
-  if(!url || !token){ toast('Chưa cấu hình URL/Token xuất hóa đơn (bấm ⚙ Cấu hình)', 'bad'); return; }
+  if(!url || !token){ toast('Chưa nhập token xuất hóa đơn trên máy này (bấm ⚙ Cấu hình)', 'bad'); return; }
   var trs = document.querySelectorAll('#hdTableWrap tr[data-stt="' + stt + '"]');
   if(!trs.length) return;
   var tenCuaHang = trs[0].children[1] ? trs[0].children[1].textContent : ('#' + stt);
@@ -1574,6 +1658,9 @@ function renderMasterTable(data){
   if(!el) return;
   if(!data || data.error){ el.innerHTML = '<div class="card empty">' + esc((data && data.error) || 'Không lấy được dữ liệu.') + '</div>'; return; }
   state.masterData = data.master || [];
+  state.masterData.forEach(function(rec){ rec._keyCu = rec.sieuThi || ''; rec._sua = false; });
+  state.mcXoa = [];
+  if(data.sheetUrl) state.mcSheetUrl = data.sheetUrl;
   renderMasterTableFull();
 }
 // Ve lai TOAN BO bang tu dau — dung khi doi du lieu goc (tai lan dau, sau Them/Xoa, sau khi nap lai tu may).
@@ -1582,7 +1669,7 @@ function renderMasterTableFull(){
   var el = document.getElementById('mcTableWrap');
   if(!el || !state.masterData) return;
   if(!state.masterData.length){
-    el.innerHTML = '<div class="card empty">Tab MasterCuaHang chưa có dữ liệu — bấm "📥 Nạp dữ liệu từ máy văn phòng" trước.</div>';
+    el.innerHTML = '<div class="card empty">Sheet MasterCuaHang chưa có dữ liệu — mở Sheet để nhập hoặc báo anh Toàn.</div>';
     return;
   }
   var html = '<div class="card">';
@@ -1593,7 +1680,7 @@ function renderMasterTableFull(){
     + '</div>';
   html += '<div style="overflow-x:auto"><table><thead><tr><th>Xóa</th>';
   COT_MC.forEach(function(c){ html += '<th>' + esc(NHAN_MC[c] || c) + '</th>'; });
-  html += '</tr></thead><tbody>';
+  html += '<th>Sửa lần cuối</th></tr></thead><tbody>';
   state.masterData.forEach(function(rec, idx){
     html += '<tr data-idx="' + idx + '" data-norm="' + escAttr(normVN(rec.sieuThi)) + '">'
       + '<td style="white-space:nowrap"><button type="button" class="btn" style="padding:4px 8px;font-size:12px;background:#c0392b" onclick="xoaMasterRow(' + idx + ')">🗑️</button> '
@@ -1607,12 +1694,25 @@ function renderMasterTableFull(){
         html += oInput(c, rec[c], w);
       }
     });
+    html += '<td class="muted" style="white-space:nowrap;font-size:11px">' + esc(rec._suaLuc || '') + (rec._suaBoi ? '<br>' + esc(rec._suaBoi) : '') + '</td>';
     html += '</tr>';
   });
   html += '</tbody></table></div>';
-  html += '<div class="row" style="margin-top:10px"><button class="btn" onclick="luuMasterEdits()">💾 Lưu chỉnh sửa</button><span class="muted" id="mcSaveMsg" style="margin-left:8px"></span></div>';
+  html += '<div class="row" style="margin-top:10px"><button class="btn" onclick="luuMasterEdits()">💾 Lưu chỉnh sửa</button><span class="muted" id="mcSaveMsg" style="margin-left:8px">Chưa sửa dòng nào.</span></div>';
   html += '</div>';
   el.innerHTML = html;
+  // v3: go/tick vao dong nao -> danh dau dong do "da sua" (to vang); khi Luu chi gui DUNG cac dong nay
+  var danhDau = function(ev){
+    var tr = ev.target && ev.target.closest ? ev.target.closest('tr[data-idx]') : null;
+    if(!tr) return;
+    var rec = state.masterData[Number(tr.getAttribute('data-idx'))];
+    if(rec){ rec._sua = true; tr.style.background = '#fff8dc'; mcDemSua(); }
+  };
+  if(!el._mcGanSuKien){ el._mcGanSuKien = true; el.addEventListener('input', danhDau); el.addEventListener('change', danhDau); }
+  state.masterData.forEach(function(rec, idx){
+    if(rec._sua){ var tr = el.querySelector('tr[data-idx="' + idx + '"]'); if(tr) tr.style.background = '#fff8dc'; }
+  });
+  mcDemSua();
   mcSearchApply(); // ap lai chu dang go tim (neu co) sau khi ve lai tu dau
 }
 // Loc NHE: chi an/hien dong co san theo ten cua hang (khop kieu Google Sheets "tim de loc", khong phan biet dau/hoa-thuong).
@@ -1632,9 +1732,11 @@ function mcSearchApply(){
 }
 function themCuaHangMoi(){
   if(!state.masterData) state.masterData = [];
+  mcGomOInput(); // giu chu dang go o cac dong khac truoc khi ve lai bang
   var rec = {};
   COT_MC.forEach(function(c){ rec[c] = TRUONG_BOOL_MC[c] ? false : ''; });
   rec.sieuThi = '(Cửa hàng mới)';
+  rec._keyCu = ''; rec._sua = true; // dong moi: luu = them dong moi tren Sheet
   state.masterData.unshift(rec); // them len dau cho de thay ngay
   state.mcSearchVal = ''; // xoa loc de chac chan thay duoc dong vua them
   renderMasterTableFull();
@@ -1645,55 +1747,88 @@ function xoaMasterRow(idx){
   if(!state.masterData || !state.masterData[idx]) return;
   var ten = state.masterData[idx].sieuThi || '(chưa đặt tên)';
   if(!confirm('Xóa "' + ten + '" khỏi bảng?\n(Chỉ có hiệu lực thật sau khi bấm "Lưu chỉnh sửa")')) return;
-  state.masterData.splice(idx, 1);
+  mcGomOInput();
+  var bo = state.masterData.splice(idx, 1)[0];
+  if(bo && bo._keyCu){ state.mcXoa = state.mcXoa || []; state.mcXoa.push(bo._keyCu); }
   renderMasterTableFull();
   toast('Đã xóa "' + ten + '" khỏi bảng — nhớ bấm "Lưu chỉnh sửa"', 'ok');
 }
-// Gom gia tri dang hien tren cac o input/checkbox (ke ca dong dang bi an do o tim) VE LAI state.masterData,
-// roi ghi DE TOAN BO tab MasterCuaHang tren Sheet — them/sua/xoa deu qua duong nay (ghi de het 1 lan).
-function luuMasterEdits(){
-  var url = getHdUrl(), token = getHdToken();
-  if(!url || !token){ toast('Chưa cấu hình URL/Token xuất hóa đơn (bấm ⚙ Cấu hình)', 'bad'); return; }
-  if(!state.masterData || !state.masterData.length){ toast('Chưa có dữ liệu để lưu', 'bad'); return; }
+// v3 (23/09/2026): CHI gui cac dong da sua (to vang) + dong bi xoa, luu TUNG cua hang theo ten (action luuCuaHang).
+// Khong con ghi de ca bang -> 2 may cung sua, hoac 1 nguoi sua thang tren Sheet cung luc, khong mat du lieu cua nhau.
+// Luu xong la co hieu luc: watcher doc thang Sheet moi lan keo hoa don (khong can "Xuat file" nua).
+function mcDemSua(){
+  var n = (state.masterData || []).filter(function(r){ return r._sua; }).length + ((state.mcXoa || []).length);
+  var el = document.getElementById('mcSaveMsg');
+  if(el) el.textContent = n ? ('Có ' + n + ' dòng chưa lưu (tô vàng) — bấm 💾 Lưu.') : 'Chưa sửa dòng nào.';
+  return n;
+}
+function mcGomOInput(){
   document.querySelectorAll('#mcTableWrap tr[data-idx]').forEach(function(tr){
-    var idx = Number(tr.getAttribute('data-idx'));
-    var rec = state.masterData[idx];
-    if(!rec) return;
+    var rec = state.masterData[Number(tr.getAttribute('data-idx'))];
+    if(!rec || !rec._sua) return;
     COT_MC.forEach(function(c){
-      if(TRUONG_BOOL_MC[c]){
-        var cb = tr.querySelector('input[data-f="' + c + '"]');
-        if(cb) rec[c] = cb.checked;
-      } else {
-        var inp = tr.querySelector('input[data-f="' + c + '"]');
-        if(inp) rec[c] = inp.value;
-      }
+      var inp = tr.querySelector('input[data-f="' + c + '"]');
+      if(!inp) return;
+      rec[c] = TRUONG_BOOL_MC[c] ? inp.checked : inp.value;
     });
   });
-  // Thu tu cot PHAI khop COT_MASTER_CH_ ben apps-script-vandon.gs: sieuThi, khoa, nguoiMua, tenKH, donVi, mst,
-  // diaChiPhapNhan, diaChiDiem, thanhToan, ckThuongMai, rule, cachXuat, thoiDiem, xuatVAT, email, ck, khongXuatNgay, grossUp, khongGopMa.
-  var rows = state.masterData.map(function(rec){
-    return [rec.sieuThi||'', rec.sieuThi||'', rec.nguoiMua||'', rec.tenKH||'', rec.donVi||'', rec.mst||'',
-      rec.diaChiPhapNhan||'', rec.diaChiDiem||'', rec.thanhToan||'', rec.ckThuongMai||'', rec.rule||'',
-      rec.cachXuat||'', rec.thoiDiem||'', !!rec.xuatVAT, rec.email||'', rec.ck||'', !!rec.khongXuatNgay,
-      rec.grossUp||'', !!rec.khongGopMa];
+}
+// POST doc duoc ket qua (Apps Script tra JSON kem CORS voi Content-Type text/plain) — khac postToUrl (no-cors, mu ket qua)
+function postDocKetQua(url, payload, cb){
+  fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) })
+    .then(function(res){ return res.text(); })
+    .then(function(t){ var d = null; try{ d = JSON.parse(t); }catch(e){ d = { error: 'Máy chủ trả về không đúng định dạng (có thể Google Drive đầy / chặn ghi)' }; } cb(d); })
+    .catch(function(){ cb({ error: 'Không kết nối được máy chủ' }); });
+}
+function luuMasterEdits(){
+  var url = getHdUrl(), token = getHdToken();
+  if(!url || !token){ toast('Chưa nhập token xuất hóa đơn trên máy này (bấm ⚙ Cấu hình)', 'bad'); return; }
+  if(!state.masterData){ toast('Chưa có dữ liệu', 'bad'); return; }
+  mcGomOInput();
+  var rows = [];
+  state.masterData.forEach(function(rec){
+    if(!rec._sua) return;
+    var r = {};
+    COT_MC.forEach(function(c){ r[c] = TRUONG_BOOL_MC[c] ? !!rec[c] : (rec[c] == null ? '' : rec[c]); });
+    rows.push({ keyCu: rec._keyCu || '', rec: r });
   });
+  var xoa = (state.mcXoa || []).slice();
+  if(!rows.length && !xoa.length){ toast('Chưa sửa dòng nào', 'bad'); return; }
   var msgEl = document.getElementById('mcSaveMsg');
-  if(msgEl) msgEl.textContent = 'Đang lưu...';
-  postToUrl(url, { token: token, action: 'ghiMasterCuaHang', rows: rows }, function(){
-    if(msgEl) msgEl.textContent = 'Đã lưu ' + rows.length + ' cửa hàng lúc ' + new Date().toLocaleTimeString('vi-VN') + '.';
-    toast('Đã lưu vào Sheet — nhớ bấm "Xuất file cho máy văn phòng" để áp dụng khi xuất hóa đơn', 'ok');
-  }, function(){
-    if(msgEl) msgEl.textContent = 'Lỗi khi lưu — kiểm tra kết nối.';
-    toast('Lỗi khi lưu', 'bad');
+  if(msgEl) msgEl.textContent = 'Đang lưu ' + rows.length + ' dòng' + (xoa.length ? (', xóa ' + xoa.length) : '') + '...';
+  postDocKetQua(url, { token: token, action: 'luuCuaHang', rows: rows, xoa: xoa, may: getDev() }, function(kq){
+    if(!kq || kq.error){
+      if(msgEl) msgEl.textContent = 'LỖI: ' + ((kq && kq.error) || 'không rõ') + ' — dữ liệu chưa lưu, các dòng vàng vẫn giữ nguyên.';
+      toast('Lưu không được', 'bad'); return;
+    }
+    var tt = 'Đã lưu lúc ' + (kq.luc || '') + ': sửa ' + (kq.sua||0) + ', thêm ' + (kq.them||0) + ', xóa ' + (kq.xoa||0) + '. Lần kéo hóa đơn tới tự dùng thông tin mới.';
+    if(kq.loi && kq.loi.length) tt += ' ⚠️ Không lưu được: ' + kq.loi.join('; ');
+    toast(kq.loi && kq.loi.length ? 'Lưu xong nhưng có dòng bị từ chối' : 'Đã lưu vào Sheet', kq.loi && kq.loi.length ? 'bad' : 'ok');
+    refreshMasterView(); // tai lai tu Sheet -> thay dung cai da ghi + cot "Sua lan cuoi"
+    setTimeout(function(){ var m = document.getElementById('mcSaveMsg'); if(m) m.textContent = tt; }, 2500);
   });
 }
+function mcDongBo(){
+  if(mcDemSua() && !confirm('Còn dòng đã sửa trên app nhưng CHƯA lưu. Đồng bộ từ Sheet sẽ bỏ các sửa đổi đó. Tiếp tục?')) return;
+  refreshMasterView();
+  toast('Đang tải lại danh bạ từ Sheet...', 'ok');
+}
+function mcMoSheet(){
+  var u = state.mcSheetUrl || 'https://docs.google.com/spreadsheets/d/1m6HeuWsHPzv0TWHZoFtSU64WlWVcl9vO1L4lwKhGwso/edit';
+  window.open(u, '_blank');
+}
+(function(){
+  var b1 = document.getElementById('btnMcSheet'), b2 = document.getElementById('btnMcDongBo');
+  if(b1) b1.addEventListener('click', mcMoSheet);
+  if(b2) b2.addEventListener('click', mcDongBo);
+})();
 // Gui lenh "nap_master" (may van phong -> Sheet, dung 1 lan dau) hoac "xuat_master" (Sheet -> may van phong) —
 // dung chung co che LENH/theo doi voi tab 3 (Xuat hoa don), nhung cac nut/o thong bao rieng cua tab nay.
 function ghiLenhMC(action){
   var url = getHdUrl(), token = getHdToken();
   var msgEl = document.getElementById('mcMsg');
   var b1 = document.getElementById('btnMcNap'), b2 = document.getElementById('btnMcXuat');
-  if(!url || !token){ toast('Chưa cấu hình URL/Token xuất hóa đơn (bấm ⚙ Cấu hình)', 'bad'); return; }
+  if(!url || !token){ toast('Chưa nhập token xuất hóa đơn trên máy này (bấm ⚙ Cấu hình)', 'bad'); return; }
   if(action === 'nap_master' && !confirm('Nạp dữ liệu từ máy văn phòng sẽ GHI ĐÈ toàn bộ dữ liệu đang có trên Sheet (kể cả sửa đổi chưa xuất). Tiếp tục?')) return;
   if(action === 'xuat_master' && !confirm('Xuất file sẽ GHI ĐÈ file master trên máy văn phòng bằng đúng dữ liệu hiện có trên Sheet (máy tự backup bản cũ trước). Tiếp tục?')) return;
   b1.disabled = true; b2.disabled = true;
@@ -2763,6 +2898,7 @@ function bootApp(){
 var nkState = { loaded:false, list:[], sel:{}, query:'', filter:'all', sending:false, tab:'send', choCount:0 };
 var NK_MAX_PX = 1600;   // canh dai nhat sau khi nen anh
 var NK_QUALITY = 0.7;   // chat luong JPEG khi nen
+var NK_MAX_HIEN = 200;  // so dong toi da ve 1 luot (danh ba ~1.200 CH -> tranh lag may yeu)
 
 // Mau mail gui doi tac sieu thi -> dung tieng Viet CO DAU, giong van formal.
 var NK_TITLE_DEFAULT = '[NemThanh] Nhắc nhập kho hàng đã giao – CH {tên CH}';
@@ -2880,18 +3016,29 @@ function nkReload(){
       return;
     }
     nkState.list = data.list; nkState.loaded = true;
-    nkRenderList();
+    // Danh ba co phan nhom -> mac dinh chi hien nhom "Đang giao" cho gon
+    if(nkState.filter === 'all' && nkState.list.some(function(x){ return /đang giao/i.test(x.nhom || ''); })){
+      nkState.filter = 'danggiao';
+    }
+    nkRenderChips(); nkRenderList();
   }, url);
 }
 
-// Chip loc
+// Chip loc. Danh ba co ~1.200 CH -> mac dinh chi hien nhom "Đang giao" cho gon,
+// can tim CH moi thi bam "Tất cả". Chip nhom chi hien khi Sheet co cot Nhom.
 function nkRenderChips(){
-  var defs = [ ['all','Tất cả'], ['sel','Đã tích'], ['wmt','WMT'], ['wmp','WM+'] ];
+  var coNhom = nkState.list.some(function(x){ return x.nhom; });
+  var defs = coNhom
+    ? [ ['danggiao','Đang giao'], ['all','Tất cả'], ['sel','Đã tích'], ['wmt','WMT'], ['wmp','WM+'] ]
+    : [ ['all','Tất cả'], ['sel','Đã tích'], ['wmt','WMT'], ['wmp','WM+'] ];
   var c = document.getElementById('nkChips'); c.innerHTML = '';
   defs.forEach(function(d){
     var span = document.createElement('span');
     span.className = 'nvchip' + (nkState.filter === d[0] ? ' on' : '');
-    var n = (d[0] === 'sel') ? (' (' + nkCountSel() + ')') : '';
+    var n = '';
+    if (d[0] === 'sel') n = ' (' + nkCountSel() + ')';
+    else if (d[0] === 'danggiao') n = ' (' + nkState.list.filter(function(x){ return /đang giao/i.test(x.nhom || ''); }).length + ')';
+    else if (d[0] === 'all') n = ' (' + nkState.list.length + ')';
     span.textContent = d[1] + n;
     span.addEventListener('click', function(){ nkState.filter = d[0]; nkRenderChips(); nkRenderList(); });
     c.appendChild(span);
@@ -2901,15 +3048,23 @@ function nkRenderChips(){
 function nkCountSel(){ var n = 0; for(var k in nkState.sel){ if(nkState.sel.hasOwnProperty(k)) n++; } return n; }
 function nkFind(ma){ for(var i=0;i<nkState.list.length;i++){ if(String(nkState.list[i].ma) === String(ma)) return nkState.list[i]; } return null; }
 
-// Loc theo query + chip
+// Loc theo query + chip.
+// Khi anh GO TIM KIEM -> bo qua bo loc nhom, tim tren TOAN BO danh ba
+// (neu khong se khong thay CH moi khi dang o nhom "Đang giao").
 function nkVisible(){
   var q = nkState.query, f = nkState.filter;
-  return nkState.list.filter(function(it){
-    if(q){
+  if(q){
+    return nkState.list.filter(function(it){
       var hay = (String(it.ma)+' '+String(it.ten)+' '+String(it.email)).toLowerCase();
-      if(hay.indexOf(q) < 0) return false;
-    }
+      return hay.indexOf(q) >= 0;
+    });
+  }
+  return nkState.list.filter(function(it){
     if(f === 'sel') return !!nkState.sel[it.ma];
+    // CH da tich LUON hien du dang loc nhom nao — neu khong, tich 1 CH ngoai nhom
+    // roi doi bo loc se thay CH do "bien mat" (dinh anh roi ma khong thay dau).
+    if(nkState.sel[it.ma]) return true;
+    if(f === 'danggiao') return /đang giao/i.test(it.nhom || '');
     if(f === 'wmt') return /^1\d{3}$/.test(String(it.ma));
     if(f === 'wmp') return !/^1\d{3}$/.test(String(it.ma));
     return true;
@@ -2920,8 +3075,14 @@ function nkVisible(){
 function nkRenderList(){
   var box = document.getElementById('nkList');
   if(!nkState.list.length){ box.innerHTML = '<div class="empty" style="padding:14px">Danh ba trong.</div>'; nkUpdateCount(); return; }
-  var vis = nkVisible();
-  if(!vis.length){ box.innerHTML = '<div class="empty" style="padding:14px">Khong co cua hang khop tim kiem.</div>'; nkUpdateCount(); return; }
+  var visAll = nkVisible();
+  if(!visAll.length){ box.innerHTML = '<div class="empty" style="padding:14px">Không có cửa hàng khớp tìm kiếm.</div>'; nkUpdateCount(); return; }
+  // Danh ba co the hon 1.000 CH -> chi ve toi da NK_MAX_HIEN dong cho khong lag may yeu.
+  // CH da tich luon duoc ve (de khong bi "mat" anh da dinh khi loc/tim).
+  var daTich = visAll.filter(function(it){ return !!nkState.sel[it.ma]; });
+  var conLai = visAll.filter(function(it){ return !nkState.sel[it.ma]; });
+  var vis = daTich.concat(conLai.slice(0, Math.max(0, NK_MAX_HIEN - daTich.length)));
+  var an = visAll.length - vis.length;
   var html = '';
   vis.forEach(function(it){
     var ma = esc(it.ma), sel = !!nkState.sel[it.ma];
@@ -2954,6 +3115,9 @@ function nkRenderList(){
     }
     html += '</div>';
   });
+  if(an > 0){
+    html += '<div style="padding:10px;text-align:center;font-size:12px;color:#7a8a80;background:#f7faf8">Còn ' + an + ' cửa hàng nữa — gõ mã hoặc tên vào ô tìm kiếm để lọc.</div>';
+  }
   box.innerHTML = html;
 
   // Gan su kien bang closure
@@ -3172,6 +3336,115 @@ function nkShowResult(res){
   (res.results || []).forEach(function(r){ if(r.ok) delete nkState.sel[r.ma]; });
   nkRenderChips(); nkRenderList();
   setTimeout(function(){ nkLoadCho(true); }, 1500); // cap nhat so dem "Dang cho" sau khi gui (server vua ghi theo doi)
+}
+
+// ===================== TAB 8: DEM TIEN CUOI NGAY =====================
+// Port tu dem-tien-cuoi-ngay.html — key localStorage GIU NGUYEN (dtcn_mg_/dtcn_fx_)
+// nen so lieu da dem trong file cu van hien o day. Tai dung todayStr/fmt/esc/parseTien co san.
+var DTCN_MG = [500000, 200000, 100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200];
+function dtcnNgay(){ var el = document.getElementById('dtcnNgay'); return (el && el.value) || todayStr(); }
+function dtcnKMg(){ return 'dtcn_mg_' + dtcnNgay(); }
+function dtcnKFx(){ return 'dtcn_fx_' + dtcnNgay(); }
+function dtcnGetMg(){ try{ return JSON.parse(localStorage.getItem(dtcnKMg()) || '{}'); }catch(e){ return {}; } }
+function dtcnRound(n){ return Math.round(n * 100) / 100; }
+
+function dtcnRenderMG(){
+  var data = dtcnGetMg();
+  var tb = document.querySelector('#dtcnMgTbl tbody'); tb.innerHTML = '';
+  DTCN_MG.forEach(function(mg){
+    var soTo = Number(data[mg]) || 0;
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="num">' + fmt(mg) + '</td>'
+      + '<td><input class="dtcn-soto" data-mg="' + mg + '" inputmode="numeric" value="' + (soTo || '') + '" placeholder="0"></td>'
+      + '<td class="num" style="font-weight:600">' + fmt(mg * soTo) + '</td>';
+    tb.appendChild(tr);
+  });
+  var ins = tb.querySelectorAll('.dtcn-soto');
+  for(var i=0;i<ins.length;i++){ (function(inp){ inp.addEventListener('input', dtcnRecalcMG); })(ins[i]); }
+  dtcnRecalcMG();
+}
+function dtcnRecalcMG(){
+  var sub = 0, data = {};
+  var ins = document.querySelectorAll('#dtcnMgTbl .dtcn-soto');
+  for(var i=0;i<ins.length;i++){
+    var mg = Number(ins[i].getAttribute('data-mg'));
+    var st = parseTien(ins[i].value); data[mg] = st;
+    var tt = mg * st; sub += tt;
+    ins[i].parentNode.parentNode.lastElementChild.textContent = fmt(tt);
+  }
+  localStorage.setItem(dtcnKMg(), JSON.stringify(data));
+  document.getElementById('dtcnMgSub').textContent = fmt(sub);
+}
+
+// Tinh bieu thuc an toan (khong eval) — chi cho 0-9 + - * / ( ) .
+function dtcnEval(str){
+  var s = String(str).replace(/×/g,'*').replace(/÷/g,'/').replace(/[,\s]/g,'');
+  if(s === '') return null;
+  if(!/^[0-9+\-*/().]+$/.test(s)) return NaN;
+  var pos = 0;
+  function peek(){ return s.charAt(pos); }
+  function parseExpr(){
+    var v = parseTerm();
+    while(peek() === '+' || peek() === '-'){ var op = s.charAt(pos++); var t = parseTerm(); v = (op === '+') ? v + t : v - t; }
+    return v;
+  }
+  function parseTerm(){
+    var v = parseFactor();
+    while(peek() === '*' || peek() === '/'){ var op = s.charAt(pos++); var f = parseFactor(); v = (op === '*') ? v * f : (f === 0 ? 0 : v / f); }
+    return v;
+  }
+  function parseFactor(){
+    if(peek() === '('){ pos++; var v = parseExpr(); if(peek() === ')') pos++; return v; }
+    if(peek() === '-'){ pos++; return -parseFactor(); }
+    if(peek() === '+'){ pos++; return parseFactor(); }
+    var start = pos;
+    while(pos < s.length && /[0-9.]/.test(s.charAt(pos))) pos++;
+    var num = parseFloat(s.slice(start, pos));
+    return isNaN(num) ? 0 : num;
+  }
+  var r = parseExpr();
+  if(pos < s.length) return NaN;
+  return r;
+}
+function dtcnRenderFx(){
+  var txt = document.getElementById('dtcnFx').value;
+  localStorage.setItem(dtcnKFx(), txt);
+  var lines = txt.split('\n');
+  var tb = document.querySelector('#dtcnFxTbl tbody'); tb.innerHTML = '';
+  var sum = 0, any = false;
+  lines.forEach(function(ln){
+    var line = ln.trim(); if(line === '') return;
+    any = true;
+    var r = dtcnEval(line);
+    var ok = (r != null && !isNaN(r) && isFinite(r));
+    if(ok) sum += r;
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + esc(line) + '</td><td class="num ' + (ok ? '' : 'err') + '">' + (ok ? fmt(dtcnRound(r)) : 'lỗi công thức') + '</td>';
+    tb.appendChild(tr);
+  });
+  document.getElementById('dtcnFxEmpty').style.display = any ? 'none' : 'block';
+  document.getElementById('dtcnFxSub').textContent = fmt(dtcnRound(sum));
+}
+function dtcnReset(){
+  if(!confirm('Xóa hết số liệu đếm tiền ngày ' + dtcnNgay() + '?')) return;
+  localStorage.removeItem(dtcnKMg()); localStorage.removeItem(dtcnKFx());
+  document.getElementById('dtcnFx').value = '';
+  dtcnRenderMG(); dtcnRenderFx();
+}
+var dtcnDaInit = false;
+function dtcnOpen(){
+  var d = document.getElementById('dtcnNgay');
+  if(!d.value) d.value = todayStr();
+  if(!dtcnDaInit){
+    dtcnDaInit = true;
+    document.getElementById('dtcnFx').addEventListener('input', dtcnRenderFx);
+    d.addEventListener('change', function(){
+      document.getElementById('dtcnFx').value = localStorage.getItem(dtcnKFx()) || '';
+      dtcnRenderMG(); dtcnRenderFx();
+    });
+  }
+  document.getElementById('dtcnFx').value = localStorage.getItem(dtcnKFx()) || '';
+  dtcnRenderMG(); dtcnRenderFx();
 }
 </script>
 </body>

@@ -10,7 +10,13 @@
 // v20 (29/07/2026): them tab 8 (Ma KH & Gia) + tab 9 (Ma san pham). Bump cache de may cu xoa ban cu.
 // v19 (20/07/2026): index.html chuyen sang NETWORK-FIRST de cac may tu nhan ban moi khi anh Toan cap nhat
 // (GitHub Pages khong dung duoc file _headers chong cache nhu Cloudflare). File tinh khac giu cache-first.
-var CACHE = 'ketoan-hn-v28';
+
+// v20 (07/09/2026): them tab "8 - Dem tien" (port dem-tien-cuoi-ngay.html vao app chinh).
+// v21 (07/09/2026): gan san DEFAULT_HD_URL — may ke toan chi can nhap token.
+// v22 (23/09/2026): danh ba cua hang luu tung dong + nut Dong bo/Mo Sheet (tab 5) + Luu danh ba (tab 3).
+
+// v29 (23/09/2026): gop nhanh may (danh ba v3, Dem tien, DEFAULT_HD_URL) vao v5.9.3 tren GitHub.
+var CACHE = 'ketoan-hn-v29';
 var SHELL = ['./index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', function(e){
