@@ -16,7 +16,8 @@
 // v22 (23/09/2026): danh ba cua hang luu tung dong + nut Dong bo/Mo Sheet (tab 5) + Luu danh ba (tab 3).
 
 // v29 (23/09/2026): gop nhanh may (danh ba v3, Dem tien, DEFAULT_HD_URL) vao v5.9.3 tren GitHub.
-var CACHE = 'ketoan-hn-v29';
+// v30 (05/10/2026): v6.1 — nut 1 Keo hoa don chay tren may chu Apps Script, khong can laptop.
+var CACHE = 'ketoan-hn-v30';
 var SHELL = ['./index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', function(e){

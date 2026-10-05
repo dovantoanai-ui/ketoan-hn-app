@@ -188,7 +188,7 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
   <section class="pane" id="pane2">
     <div class="card">
       <h3>🧾 Xuất hóa đơn chiều</h3>
-      <div class="muted" style="margin-bottom:10px">Bấm 1️⃣ trước để kéo hóa đơn cần xuất hôm nay vào tab CHIỀU. Mở tab đó kiểm tra thấy đúng rồi mới bấm 2️⃣ để đẩy hóa đơn NHÁP lên meInvoice. Máy văn phòng (đang bật watch-chieu.js) sẽ tự xử lý — cần máy đó đang bật và watcher đang chạy.</div>
+      <div class="muted" style="margin-bottom:10px">Bấm 1️⃣ để kéo hóa đơn cần xuất hôm nay vào tab CHIỀU — <b>chạy ngay trên máy chủ Google, không cần laptop văn phòng bật</b>. Kiểm tra bảng thấy đúng rồi bấm 2️⃣ để đẩy NHÁP lên meInvoice (bước này vẫn cần máy văn phòng bật + watcher chạy; laptop tắt thì dùng 📥 Tải Excel danh sách rồi tải lên meInvoice bằng tay).</div>
       <div class="row">
         <button class="btn ghost" id="btnHd1" onclick="ghiLenhHD('xuat_chieu')">1️⃣ Kéo hóa đơn cần xuất hôm nay</button>
         <button class="btn" id="btnHd2" onclick="ghiLenhHD('xuat_that')">2️⃣ Đẩy lên meInvoice</button>
@@ -449,7 +449,7 @@ table.khg input.gi{width:82px;border:1px solid #c9b784;background:#fffdf5;border
 
 <script>
 // ===================== TIỆN ÍCH =====================
-var APP_VERSION = 'v6.0-danhba'; // 23/09/2026: GOP 2 nhanh — v5.9.3-spfresh (GitHub 04/08: tab Ma KH & Gia, Ma SP, tangtoc) + v5.4-nhapkho (may 05/08: danh ba 1.181 CH) + tab 10 Dem tien + DEFAULT_HD_URL + danh ba cua hang v3 (luu tung dong, Dong bo/Mo Sheet, Luu danh ba tab 3)
+var APP_VERSION = 'v6.1-keomaychu'; // 05/10/2026: nut 1 Keo hoa don chay tren may chu (khong can laptop). Truoc do: v6.0-danhba // 23/09/2026: GOP 2 nhanh — v5.9.3-spfresh (GitHub 04/08: tab Ma KH & Gia, Ma SP, tangtoc) + v5.4-nhapkho (may 05/08: danh ba 1.181 CH) + tab 10 Dem tien + DEFAULT_HD_URL + danh ba cua hang v3 (luu tung dong, Dong bo/Mo Sheet, Luu danh ba tab 3)
 
 // URL Apps Script doi chieu/quy nhung san — de app mo len la chay, khong phai dan tay.
 // Anh Toan dan URL /exec vao trong dau nhay ben duoi (giu nguyen dau nhay). De trong '' = app ve che do cau hinh tay nhu cu.
@@ -1000,7 +1000,40 @@ function debugHD(){
 }
 
 // ===================== TAB 3: XUẤT HÓA ĐƠN =====================
+// v6.1 (05/10/2026): nut 1 "Keo hoa don" chay THANG tren may chu (action keoChieu, Apps Script v4) — khong con phai cho
+// watcher tren laptop admin-pc. May chu chua len v4 / loi mang -> tu quay ve cach cu (ghi lenh cho watcher).
 function ghiLenhHD(action){
+  if(action === 'xuat_chieu') return keoHoaDonMayChu();
+  return ghiLenhHDQuaMay(action);
+}
+function keoHoaDonMayChu(){
+  var url = getHdUrl(), token = getHdToken();
+  var msgEl = document.getElementById('hdMsg');
+  var b1 = document.getElementById('btnHd1'), b2 = document.getElementById('btnHd2');
+  if(!url || !token){ toast('Chưa nhập token xuất hóa đơn trên máy này (bấm ⚙ Cấu hình)', 'bad'); return; }
+  b1.disabled = true; b2.disabled = true;
+  var bd = Date.now();
+  if(msgEl) msgEl.textContent = 'Đang kéo hóa đơn trên máy chủ... (thường 10–40 giây)';
+  // goi _jsonpGoi (khong tu thu lai) — loi thi chuyen sang cach cu ngay, khong keo 2 lan
+  _jsonpGoi({ action:'keoChieu', token: token }, function(data){
+    var giay = Math.round((Date.now() - bd) / 1000);
+    if(data && data.ok){
+      b1.disabled = false; b2.disabled = false;
+      if(msgEl) msgEl.textContent = '✅ ' + (data.ketQua || ('Đã kéo ' + data.soHoaDon + ' hóa đơn')) + ' (' + giay + ' giây)';
+      toast('Đã kéo ' + data.soHoaDon + ' hóa đơn (' + data.soDong + ' dòng)', 'ok');
+      jsonpGet({ action:'docChieu', token: token }, function(cd){ renderChieuTable(cd); }, url);
+      return;
+    }
+    if(data && data.error && /dang co nguoi khac/i.test(data.error)){
+      b1.disabled = false; b2.disabled = false;
+      if(msgEl) msgEl.textContent = 'Có người khác đang kéo hóa đơn — đợi 30 giây rồi bấm lại.'; toast('Đang bận, thử lại sau 30 giây', 'bad'); return;
+    }
+    // may chu chua nang cap / loi / het gio -> quay ve cach cu
+    if(msgEl) msgEl.textContent = 'Máy chủ chưa kéo được (' + ((data && data.error) || 'không phản hồi') + ') — chuyển sang gửi lệnh cho máy văn phòng...';
+    ghiLenhHDQuaMay('xuat_chieu');
+  }, url);
+}
+function ghiLenhHDQuaMay(action){
   var url = getHdUrl(), token = getHdToken();
   var msgEl = document.getElementById('hdMsg');
   var b1 = document.getElementById('btnHd1'), b2 = document.getElementById('btnHd2');
