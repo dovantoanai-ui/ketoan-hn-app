@@ -18,7 +18,8 @@
 // v29 (23/09/2026): gop nhanh may (danh ba v3, Dem tien, DEFAULT_HD_URL) vao v5.9.3 tren GitHub.
 // v30 (05/10/2026): v6.1 — nut 1 Keo hoa don chay tren may chu Apps Script, khong can laptop.
 // v31 (16/10/2026): v6.2 — cham cong + Hoa don loi + Chup chung tu; khong can thiep request toi Hub (workers.dev).
-var CACHE = 'ketoan-hn-v31';
+// v32 (17/10/2026): v6.3 — sua HD o tab 11 + canh bao VAT + nut Cham cong tren thanh tieu de + man PIN.
+var CACHE = 'ketoan-hn-v32';
 var SHELL = ['./index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', function(e){
