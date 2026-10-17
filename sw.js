@@ -20,7 +20,8 @@
 // v31 (16/10/2026): v6.2 — cham cong + Hoa don loi + Chup chung tu; khong can thiep request toi Hub (workers.dev).
 // v32 (17/10/2026): v6.3 — sua HD o tab 11 + canh bao VAT + nut Cham cong tren thanh tieu de + man PIN.
 // v33 (17/10/2026): v6.4 — dien thoai luoi muc + tab 11 sua 1 loat.
-var CACHE = 'ketoan-hn-v33';
+// v34 (17/10/2026): v6.5 — tab 11 tat ca loi nhieu ngay + 🔔 Viec can xu ly.
+var CACHE = 'ketoan-hn-v34';
 var SHELL = ['./index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', function(e){
