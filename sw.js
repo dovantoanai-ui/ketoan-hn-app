@@ -17,7 +17,8 @@
 
 // v29 (23/09/2026): gop nhanh may (danh ba v3, Dem tien, DEFAULT_HD_URL) vao v5.9.3 tren GitHub.
 // v30 (05/10/2026): v6.1 — nut 1 Keo hoa don chay tren may chu Apps Script, khong can laptop.
-var CACHE = 'ketoan-hn-v30';
+// v31 (16/10/2026): v6.2 — cham cong + Hoa don loi + Chup chung tu; khong can thiep request toi Hub (workers.dev).
+var CACHE = 'ketoan-hn-v31';
 var SHELL = ['./index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', function(e){
@@ -33,6 +34,7 @@ self.addEventListener('fetch', function(e){
   var url = req.url;
   // Khong can thiep request toi Apps Script (du lieu dong — luon lay moi)
   if (url.indexOf('script.google.com') >= 0) return;
+  if (url.indexOf('workers.dev') >= 0) return;   // Hub: API van-don-sale, bot-app, bong-bong.js — luon di mang
 
   // index.html / trang goc: NETWORK-FIRST — lay ban moi tu mang, luu lai cache; offline thi dung cache.
   var isDoc = req.mode === 'navigate' || url.indexOf('index.html') >= 0;
