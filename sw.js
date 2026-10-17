@@ -19,7 +19,8 @@
 // v30 (05/10/2026): v6.1 — nut 1 Keo hoa don chay tren may chu Apps Script, khong can laptop.
 // v31 (16/10/2026): v6.2 — cham cong + Hoa don loi + Chup chung tu; khong can thiep request toi Hub (workers.dev).
 // v32 (17/10/2026): v6.3 — sua HD o tab 11 + canh bao VAT + nut Cham cong tren thanh tieu de + man PIN.
-var CACHE = 'ketoan-hn-v32';
+// v33 (17/10/2026): v6.4 — dien thoai luoi muc + tab 11 sua 1 loat.
+var CACHE = 'ketoan-hn-v33';
 var SHELL = ['./index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', function(e){
